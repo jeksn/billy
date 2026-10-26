@@ -1,0 +1,66 @@
+import { BookIcon } from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
+import { coverUrl, type Book } from '@/lib/api'
+import { formatSize } from '@/lib/format'
+
+export function BookList({
+  books,
+  onSelect,
+}: {
+  books: Book[]
+  onSelect: (book: Book) => void
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      {books.map((book) => {
+        const cover = coverUrl(book)
+        return (
+          <button
+            key={book.id}
+            type="button"
+            className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-left outline-none hover:bg-background/70 focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => onSelect(book)}
+          >
+            <div className="aspect-[2/3] w-9 shrink-0 overflow-hidden rounded-sm border bg-muted">
+              {cover ? (
+                <img
+                  src={cover}
+                  alt={`Cover of ${book.title}`}
+                  className="size-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="flex size-full items-center justify-center text-muted-foreground">
+                  <BookIcon className="size-3" />
+                </div>
+              )}
+            </div>
+
+            <span
+              className="flex-1 truncate text-sm font-medium"
+              title={book.title}
+            >
+              {book.title}
+            </span>
+            <span
+              className="hidden w-44 truncate text-sm text-muted-foreground sm:block"
+              title={book.author ?? undefined}
+            >
+              {book.author ?? 'Unknown author'}
+            </span>
+            <span className="hidden w-12 text-sm text-muted-foreground lg:block">
+              {book.year ?? ''}
+            </span>
+            <Badge variant="secondary" className="uppercase">
+              {book.format}
+            </Badge>
+            <span className="hidden w-16 text-right text-xs text-muted-foreground md:block">
+              {formatSize(book.fileSize)}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}

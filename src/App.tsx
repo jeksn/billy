@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import {
   BookIcon,
   FilePlus2Icon,
+  LayoutGridIcon,
+  ListIcon,
   SearchIcon,
   SettingsIcon,
 } from 'lucide-react'
@@ -11,6 +13,7 @@ import { cn } from 'cn'
 
 import { BookCard } from '@/components/book-card'
 import { BookDetailsSheet } from '@/components/book-details-sheet'
+import { BookList } from '@/components/book-list'
 import { LibrarySetup } from '@/components/library-setup'
 import { SettingsSheet } from '@/components/settings-sheet'
 import {
@@ -37,6 +40,11 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from '@/components/ui/toggle-group'
+import { usePersistentState } from '@/hooks/use-persistent-state'
+import {
   getBooks,
   getAppState,
   importFiles,
@@ -50,6 +58,18 @@ import {
   type ImportEvent,
 } from '@/lib/api'
 
+type ViewMode = 'grid' | 'list'
+type GridSize = 'small' | 'medium' | 'large'
+
+const GRID_SIZES: Record<GridSize, string> = {
+  small:
+    'grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10',
+  medium:
+    'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8',
+  large:
+    'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+}
+
 const IS_MAC = /Mac/i.test(navigator.userAgent)
 
 export default function App() {
@@ -59,6 +79,14 @@ export default function App() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
   const [searchOpen, setSearchOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [viewMode, setViewMode] = usePersistentState<ViewMode>(
+    'billy.viewMode',
+    'grid',
+  )
+  const [gridSize, setGridSize] = usePersistentState<GridSize>(
+    'billy.gridSize',
+    'medium',
+  )
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [importing, setImporting] = useState<{
     current: number
@@ -278,6 +306,45 @@ export default function App() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <ToggleGroup
+            variant="outline"
+            size="sm"
+            value={[viewMode]}
+            onValueChange={(value) => {
+              const next = value[value.length - 1]
+              if (next === 'grid' || next === 'list') {
+                setViewMode(next)
+              }
+            }}
+          >
+            <ToggleGroupItem value="grid">
+              <LayoutGridIcon />
+              <span className="sr-only">Grid view</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="list">
+              <ListIcon />
+              <span className="sr-only">List view</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
+
+          {viewMode === 'grid' && (
+            <ToggleGroup
+              variant="outline"
+              size="sm"
+              value={[gridSize]}
+              onValueChange={(value) => {
+                const next = value[value.length - 1]
+                if (next === 'small' || next === 'medium' || next === 'large') {
+                  setGridSize(next)
+                }
+              }}
+            >
+              <ToggleGroupItem value="small">S</ToggleGroupItem>
+              <ToggleGroupItem value="medium">M</ToggleGroupItem>
+              <ToggleGroupItem value="large">L</ToggleGroupItem>
+            </ToggleGroup>
+          )}
+
           <Button
             variant="ghost"
             size="icon"
@@ -319,16 +386,18 @@ export default function App() {
             </EmptyHeader>
           </Empty>
         )
-      ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
-          {filtered.map((book) => (
-            <BookCard
-              key={book.id}
-              book={book}
-              onSelect={() => setSelectedBook(book)}
-            />
-          ))}
-        </div>
+        ) : viewMode === 'list' ? (
+          <BookList books={filtered} onSelect={setSelectedBook} />
+        ) : (
+          <div className={cn('grid gap-4', GRID_SIZES[gridSize])}>
+            {filtered.map((book) => (
+              <BookCard
+                key={book.id}
+                book={book}
+                onSelect={() => setSelectedBook(book)}
+              />
+            ))}
+          </div>
         )}
       </main>
 
