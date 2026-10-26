@@ -35,6 +35,8 @@ features. Check items off as they ship.
 
 - [ ] In-app EPUB reader (webview-based renderer; foliate-js or epub.js as
       candidates)
+- [ ] Replace the details-sheet "Open" button with the in-app reader (today it
+      just hands the file to Apple Books via the system default)
 - [ ] PDF cover rendering from page 1 (needs a PDF rasterizer; pdfium-rs or
       mupdf — native dependency decision required)
 
