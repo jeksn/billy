@@ -33,7 +33,7 @@ const GRID_SIZE_OPTIONS = [
 const SORT_OPTIONS = [
   { value: 'author', label: 'Author' },
   { value: 'title', label: 'Title' },
-  { value: 'recent', label: 'Recently imported' },
+  { value: 'recent', label: 'Recent' },
   { value: 'year', label: 'Year' },
 ] as const
 
