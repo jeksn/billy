@@ -204,6 +204,19 @@ fn open_initial_library(app: &AppHandle) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Open a book with the system's default application. Uses the opener plugin's
+/// Rust API directly: the path comes from our own database, not the webview,
+/// so the plugin's JS-command path scope does not apply.
+#[tauri::command]
+async fn open_book(app: AppHandle, path: String) -> Result<(), AppError> {
+    use tauri_plugin_opener::OpenerExt;
+    run_blocking(app, move |app| {
+        app.opener().open_path(path, None::<&str>)?;
+        Ok(())
+    })
+    .await
+}
+
 #[tauri::command]
 async fn delete_book(app: AppHandle, id: String) -> Result<(), AppError> {
     run_blocking(app, move |app| {
@@ -252,7 +265,8 @@ pub fn run() {
             import_folder,
             import_from_calibre,
             delete_book,
-            update_book_metadata
+            update_book_metadata,
+            open_book
         ])
         .run(tauri::generate_context!())
         .expect("error while running billy");

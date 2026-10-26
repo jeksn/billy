@@ -1,4 +1,4 @@
-import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener'
+import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import {
   BookIcon,
   BookOpenIcon,
@@ -39,7 +39,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { coverUrl, type Book } from '@/lib/api'
+import { coverUrl, openBook, type Book } from '@/lib/api'
 import { formatSize } from '@/lib/format'
 
 export function BookDetailsSheet({
@@ -60,6 +60,7 @@ export function BookDetailsSheet({
 }) {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [coverPreviewOpen, setCoverPreviewOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const [title, setTitle] = useState('')
@@ -97,7 +98,11 @@ export function BookDetailsSheet({
       {book && (
         <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-md">
           <div className="flex justify-center p-6 pt-12">
-            <div className="relative aspect-[2/3] w-40 overflow-hidden rounded-md border bg-muted">
+            <button
+              type="button"
+              className="relative aspect-[2/3] w-40 cursor-zoom-in overflow-hidden rounded-md border bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => cover && setCoverPreviewOpen(true)}
+            >
               {cover ? (
                 <img
                   src={cover}
@@ -109,7 +114,7 @@ export function BookDetailsSheet({
                   <BookIcon className="size-10" />
                 </div>
               )}
-            </div>
+            </button>
           </div>
 
           <SheetHeader className="gap-1 px-6">
@@ -147,7 +152,7 @@ export function BookDetailsSheet({
                 <Button
                   className="flex-1"
                   onClick={() => {
-                    openPath(book.path).catch((error) =>
+                    openBook(book.path).catch((error) =>
                       toast.error(String(error)),
                     )
                   }}
@@ -188,6 +193,31 @@ export function BookDetailsSheet({
               </div>
             </div>
           </div>
+
+          <Dialog
+            open={coverPreviewOpen}
+            onOpenChange={setCoverPreviewOpen}
+          >
+            <DialogContent
+              className="w-auto max-w-3xl bg-transparent p-0 ring-0"
+              showCloseButton={false}
+              onClick={() => setCoverPreviewOpen(false)}
+            >
+              <DialogHeader className="sr-only">
+                <DialogTitle>Cover preview</DialogTitle>
+                <DialogDescription>
+                  Full-size view of the book cover.
+                </DialogDescription>
+              </DialogHeader>
+              {cover && (
+                <img
+                  src={cover}
+                  alt={`Cover of ${book.title}`}
+                  className="max-h-[85vh] w-auto rounded-lg shadow-2xl"
+                />
+              )}
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
             <DialogContent className="sm:max-w-md">

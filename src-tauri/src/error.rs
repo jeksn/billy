@@ -8,6 +8,8 @@ pub enum AppError {
     Db(#[from] rusqlite::Error),
     #[error("Tauri error: {0}")]
     Tauri(#[from] tauri::Error),
+    #[error("Opener error: {0}")]
+    Opener(#[from] tauri_plugin_opener::Error),
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
     #[error("Zip error: {0}")]

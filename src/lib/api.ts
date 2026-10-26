@@ -91,6 +91,10 @@ export async function deleteBook(id: string): Promise<void> {
   await invoke('delete_book', { id })
 }
 
+export async function openBook(path: string): Promise<void> {
+  await invoke('open_book', { path })
+}
+
 export async function updateBookMetadata(
   id: string,
   title: string,
