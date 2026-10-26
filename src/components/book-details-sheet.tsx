@@ -1,5 +1,5 @@
-import { revealItemInDir } from '@tauri-apps/plugin-opener'
-import { BookIcon, FolderSearchIcon } from 'lucide-react'
+import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener'
+import { BookIcon, BookOpenIcon, FolderSearchIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
@@ -74,17 +74,29 @@ export function BookDetailsSheet({
               </dd>
             </dl>
 
-            <Button
-              variant="outline"
-              onClick={() => {
-                revealItemInDir(book.path).catch((error) =>
-                  toast.error(String(error)),
-                )
-              }}
-            >
-              <FolderSearchIcon data-icon="inline-start" />
-              Show in folder
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => {
+                  openPath(book.path).catch((error) =>
+                    toast.error(String(error)),
+                  )
+                }}
+              >
+                <BookOpenIcon data-icon="inline-start" />
+                Open
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  revealItemInDir(book.path).catch((error) =>
+                    toast.error(String(error)),
+                  )
+                }}
+              >
+                <FolderSearchIcon data-icon="inline-start" />
+                Show in folder
+              </Button>
+            </div>
           </div>
         </SheetContent>
       )}
