@@ -100,6 +100,12 @@ export function SearchDialog({
             onChange={(event) =>
               onFiltersChange({ ...filters, query: event.target.value })
             }
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === 'Escape') {
+                event.preventDefault()
+                onOpenChange(false)
+              }
+            }}
             placeholder="Search by title or author..."
             className="pl-8"
           />
