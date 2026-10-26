@@ -22,16 +22,7 @@ features. Check items off as they ship.
 - [x] Edit book metadata (title, author, year; rename folder/file to match)
 - [x] Open with system reader (opener plugin, one command + permission)
 
-## Phase 2 — Send to e-reader
-
-- [ ] Detect connected e-readers (see research below)
-- [ ] Copy selected book(s) to device storage
-- [ ] Per-device target paths and format notes (Kobo: epub anywhere; Kindle:
-      azw3/mobi via USB, epub only via Send-to-Kindle)
-- [ ] Optional: remember which books are on which device (Calibre's
-      "On Device" column)
-
-## Phase 3 — Reading
+## Phase 2 — Reading
 
 - [ ] In-app EPUB reader (webview-based renderer; foliate-js or epub.js as
       candidates)
@@ -39,6 +30,15 @@ features. Check items off as they ship.
       just hands the file to Apple Books via the system default)
 - [ ] PDF cover rendering from page 1 (needs a PDF rasterizer; pdfium-rs or
       mupdf — native dependency decision required)
+
+## Phase 3 — Send to e-reader
+
+- [ ] Detect connected e-readers (see research below)
+- [ ] Copy selected book(s) to device storage
+- [ ] Per-device target paths and format notes (Kobo: epub anywhere; Kindle:
+      azw3/mobi via USB, epub only via Send-to-Kindle)
+- [ ] Optional: remember which books are on which device (Calibre's
+      "On Device" column)
 
 ---
 
