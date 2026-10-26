@@ -204,6 +204,32 @@ fn open_initial_library(app: &AppHandle) -> Result<(), AppError> {
     Ok(())
 }
 
+#[tauri::command]
+async fn delete_book(app: AppHandle, id: String) -> Result<(), AppError> {
+    run_blocking(app, move |app| {
+        let state = app.state::<SharedState>();
+        state.with_library(|lib| lib.delete_book(&id))
+    })
+    .await
+}
+
+#[tauri::command]
+async fn update_book_metadata(
+    app: AppHandle,
+    id: String,
+    title: String,
+    author: Option<String>,
+    year: Option<i64>,
+) -> Result<Book, AppError> {
+    run_blocking(app, move |app| {
+        let state = app.state::<SharedState>();
+        state.with_library(|lib| {
+            lib.update_metadata(&id, &title, author.as_deref(), year)
+        })
+    })
+    .await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -224,7 +250,9 @@ pub fn run() {
             get_books,
             import_files,
             import_folder,
-            import_from_calibre
+            import_from_calibre,
+            delete_book,
+            update_book_metadata
         ])
         .run(tauri::generate_context!())
         .expect("error while running billy");

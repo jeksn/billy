@@ -81,6 +81,99 @@ impl Library {
         db::count_books(&self.conn)
     }
 
+    /// Delete a book: remove its file, cover, and (now-empty) folder, then
+    /// the database row. Missing files are tolerated so a delete always
+    /// removes the row.
+    pub fn delete_book(&self, id: &str) -> Result<(), AppError> {
+        let row = db::get_book(&self.conn, id)?
+            .ok_or_else(|| AppError::msg("book not found"))?;
+
+        let file = self.root.join(&row.file_path);
+        if file.exists() {
+            fs::remove_file(&file)?;
+        }
+
+        let old_dir = file.parent().map(|p| p.to_path_buf());
+        if let Some(cover) = row.cover_path.as_deref() {
+            let cover_path = self.root.join(cover);
+            if cover_path.exists() {
+                fs::remove_file(&cover_path)?;
+            }
+        }
+        if let Some(dir) = old_dir {
+            // Only removes the folder if this book was its last file.
+            let _ = fs::remove_dir(dir);
+        }
+
+        db::delete_book(&self.conn, id)?;
+        Ok(())
+    }
+
+    /// Update title/author/year, moving the book's folder and file to match
+    /// the new metadata.
+    pub fn update_metadata(
+        &self,
+        id: &str,
+        title: &str,
+        author: Option<&str>,
+        year: Option<i64>,
+    ) -> Result<Book, AppError> {
+        let row = db::get_book(&self.conn, id)?
+            .ok_or_else(|| AppError::msg("book not found"))?;
+        let title = title.trim();
+        if title.is_empty() {
+            return Err(AppError::msg("title cannot be empty"));
+        }
+        let author = author.map(str::trim).filter(|a| !a.is_empty());
+
+        let old_dir_rel = row
+            .file_path
+            .rsplit_once('/')
+            .map(|(dir, _)| dir.to_string())
+            .unwrap_or_default();
+        let new_dir_rel = book_dir_rel(id, title, author);
+        let new_file_rel =
+            format!("{}/{}", new_dir_rel, file_name_rel(title, author, &row.format));
+
+        let mut file_rel = row.file_path.clone();
+        let mut cover_rel = row.cover_path.clone();
+
+        if new_file_rel != row.file_path {
+            fs::create_dir_all(self.root.join(&new_dir_rel))?;
+            fs::rename(
+                self.root.join(&row.file_path),
+                self.root.join(&new_file_rel),
+            )?;
+            if let Some(cover) = row.cover_path.as_deref() {
+                let cover_ext = cover.rsplit('.').next().unwrap_or("jpg");
+                let new_cover = format!("{new_dir_rel}/cover.{cover_ext}");
+                let old_cover = self.root.join(cover);
+                if old_cover.exists() {
+                    fs::rename(&old_cover, self.root.join(&new_cover))?;
+                }
+                cover_rel = Some(new_cover);
+            }
+            if old_dir_rel != new_dir_rel {
+                let _ = fs::remove_dir(self.root.join(&old_dir_rel));
+            }
+            file_rel = new_file_rel;
+        }
+
+        db::update_book_metadata(
+            &self.conn,
+            id,
+            title,
+            author,
+            year,
+            &file_rel,
+            cover_rel.as_deref(),
+        )?;
+
+        let updated = db::get_book(&self.conn, id)?
+            .ok_or_else(|| AppError::msg("book disappeared during update"))?;
+        Ok(self.row_to_book(updated))
+    }
+
     pub fn list_books(&self) -> Result<Vec<Book>, AppError> {
         Ok(db::list_books(&self.conn)?
             .into_iter()

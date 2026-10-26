@@ -39,6 +39,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { usePersistentState } from '@/hooks/use-persistent-state'
 import {
+  deleteBook,
   getBooks,
   getAppState,
   importFiles,
@@ -47,6 +48,7 @@ import {
   pickBookFiles,
   pickFolder,
   setLibrary,
+  updateBookMetadata,
   type AppStateSummary,
   type Book,
   type ImportEvent,
@@ -259,6 +261,35 @@ export default function App() {
     return <LibrarySetup onChoose={chooseLibrary} />
   }
 
+  const handleDelete = async (book: Book) => {
+    try {
+      await deleteBook(book.id)
+      setSelectedBook(null)
+      await refreshBooks()
+      toast.success(`Deleted "${book.title}"`)
+    } catch (error) {
+      toast.error(String(error))
+    }
+  }
+
+  const handleMetadataSave = async (
+    book: Book,
+    title: string,
+    author: string | null,
+    year: number | null,
+  ): Promise<Book> => {
+    try {
+      const updated = await updateBookMetadata(book.id, title, author, year)
+      setSelectedBook(updated)
+      await refreshBooks()
+      toast.success('Metadata updated')
+      return updated
+    } catch (error) {
+      toast.error(String(error))
+      throw error
+    }
+  }
+
   return (
     <div className="flex min-h-svh flex-col">
       <header
@@ -403,6 +434,8 @@ export default function App() {
       <BookDetailsSheet
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
+        onDelete={handleDelete}
+        onMetadataSave={handleMetadataSave}
       />
     </div>
   )

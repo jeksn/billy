@@ -86,3 +86,16 @@ export async function pickBookFiles(): Promise<string[]> {
 export function coverUrl(book: Book): string | null {
   return book.cover ? convertFileSrc(book.cover) : null
 }
+
+export async function deleteBook(id: string): Promise<void> {
+  await invoke('delete_book', { id })
+}
+
+export async function updateBookMetadata(
+  id: string,
+  title: string,
+  author: string | null,
+  year: number | null,
+): Promise<Book> {
+  return invoke<Book>('update_book_metadata', { id, title, author, year })
+}

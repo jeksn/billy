@@ -152,3 +152,53 @@ pub fn count_books(conn: &Connection) -> Result<u32, AppError> {
     let count: i64 = conn.query_row("SELECT COUNT(*) FROM books", [], |row| row.get(0))?;
     Ok(count as u32)
 }
+
+pub fn get_book(conn: &Connection, id: &str) -> Result<Option<BookRow>, AppError> {
+    let row = conn
+        .query_row(
+            "SELECT id, title, author, format, file_path, cover_path, year, file_size, imported_at
+             FROM books WHERE id = ?1",
+            params![id],
+            |row| {
+                Ok(BookRow {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    author: row.get(2)?,
+                    format: row.get(3)?,
+                    file_path: row.get(4)?,
+                    cover_path: row.get(5)?,
+                    year: row.get(6)?,
+                    file_size: row.get::<_, i64>(7)? as u64,
+                    imported_at: row.get(8)?,
+                })
+            },
+        )
+        .map(Some)
+        .or_else(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => Ok(None),
+            other => Err(other),
+        })?;
+    Ok(row)
+}
+
+pub fn update_book_metadata(
+    conn: &Connection,
+    id: &str,
+    title: &str,
+    author: Option<&str>,
+    year: Option<i64>,
+    file_path: &str,
+    cover_path: Option<&str>,
+) -> Result<(), AppError> {
+    conn.execute(
+        "UPDATE books SET title = ?2, author = ?3, year = ?4, file_path = ?5, cover_path = ?6
+         WHERE id = ?1",
+        params![id, title, author, year, file_path, cover_path],
+    )?;
+    Ok(())
+}
+
+pub fn delete_book(conn: &Connection, id: &str) -> Result<(), AppError> {
+    conn.execute("DELETE FROM books WHERE id = ?1", params![id])?;
+    Ok(())
+}

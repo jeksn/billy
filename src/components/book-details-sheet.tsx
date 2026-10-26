@@ -1,9 +1,36 @@
 import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener'
-import { BookIcon, BookOpenIcon, FolderSearchIcon } from 'lucide-react'
+import {
+  BookIcon,
+  BookOpenIcon,
+  FolderSearchIcon,
+  PencilIcon,
+  Trash2Icon,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
@@ -18,11 +45,52 @@ import { formatSize } from '@/lib/format'
 export function BookDetailsSheet({
   book,
   onClose,
+  onDelete,
+  onMetadataSave,
 }: {
   book: Book | null
   onClose: () => void
+  onDelete: (book: Book) => Promise<void>
+  onMetadataSave: (
+    book: Book,
+    title: string,
+    author: string | null,
+    year: number | null,
+  ) => Promise<Book>
 }) {
+  const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const [title, setTitle] = useState('')
+  const [author, setAuthor] = useState('')
+  const [year, setYear] = useState('')
+
+  useEffect(() => {
+    if (book) {
+      setTitle(book.title)
+      setAuthor(book.author ?? '')
+      setYear(book.year === null ? '' : String(book.year))
+    }
+  }, [book])
+
   const cover = book ? coverUrl(book) : null
+
+  const saveMetadata = async () => {
+    if (!book || !title.trim()) return
+    setSaving(true)
+    try {
+      const parsedYear = year.trim() === '' ? null : Number(year)
+      const validYear =
+        parsedYear !== null && Number.isFinite(parsedYear) && parsedYear >= 1000
+          ? Math.trunc(parsedYear)
+          : null
+      await onMetadataSave(book, title.trim(), author.trim() || null, validYear)
+      setEditOpen(false)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <Sheet open={book !== null} onOpenChange={(open) => !open && onClose()}>
@@ -75,29 +143,127 @@ export function BookDetailsSheet({
             </dl>
 
             <div className="flex flex-col gap-2">
-              <Button
-                onClick={() => {
-                  openPath(book.path).catch((error) =>
-                    toast.error(String(error)),
-                  )
-                }}
-              >
-                <BookOpenIcon data-icon="inline-start" />
-                Open
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  revealItemInDir(book.path).catch((error) =>
-                    toast.error(String(error)),
-                  )
-                }}
-              >
-                <FolderSearchIcon data-icon="inline-start" />
-                Show in folder
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    openPath(book.path).catch((error) =>
+                      toast.error(String(error)),
+                    )
+                  }}
+                >
+                  <BookOpenIcon data-icon="inline-start" />
+                  Open
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setEditOpen(true)}
+                >
+                  <PencilIcon data-icon="inline-start" />
+                  Edit
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    revealItemInDir(book.path).catch((error) =>
+                      toast.error(String(error)),
+                    )
+                  }}
+                >
+                  <FolderSearchIcon data-icon="inline-start" />
+                  Show in folder
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2Icon data-icon="inline-start" />
+                  Delete
+                </Button>
+              </div>
             </div>
           </div>
+
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit book</DialogTitle>
+                <DialogDescription>
+                  The book's folder and file are renamed to match.
+                </DialogDescription>
+              </DialogHeader>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="edit-title">Title</FieldLabel>
+                  <Input
+                    id="edit-title"
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="edit-author">Author</FieldLabel>
+                  <Input
+                    id="edit-author"
+                    value={author}
+                    onChange={(event) => setAuthor(event.target.value)}
+                    placeholder="Unknown author"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="edit-year">Year</FieldLabel>
+                  <Input
+                    id="edit-year"
+                    type="number"
+                    value={year}
+                    onChange={(event) => setYear(event.target.value)}
+                    placeholder="—"
+                  />
+                </Field>
+              </FieldGroup>
+              <DialogFooter>
+                <Button
+                  variant="ghost"
+                  onClick={() => setEditOpen(false)}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => void saveMetadata()}
+                  disabled={saving || !title.trim()}
+                >
+                  Save
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this book?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  "{book.title}" will be removed from the library and its
+                  files deleted from disk. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-white hover:bg-destructive/90"
+                  onClick={() => void onDelete(book)}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </SheetContent>
       )}
     </Sheet>

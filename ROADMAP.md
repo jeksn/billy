@@ -18,9 +18,9 @@ features. Check items off as they ship.
 
 ## Phase 1 — Library management
 
-- [ ] Delete books (remove row + files, confirm dialog)
-- [ ] Edit book metadata (title, author, year; rename folder/file to match)
-- [ ] Open with system reader (opener plugin, one command + permission)
+- [x] Delete books (remove row + files, confirm dialog)
+- [x] Edit book metadata (title, author, year; rename folder/file to match)
+- [x] Open with system reader (opener plugin, one command + permission)
 
 ## Phase 2 — Send to e-reader
 
