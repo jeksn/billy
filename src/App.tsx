@@ -3,8 +3,8 @@ import { toast } from 'sonner'
 import {
   BookIcon,
   FilePlus2Icon,
-  MoreHorizontalIcon,
   SearchIcon,
+  SettingsIcon,
 } from 'lucide-react'
 
 import { cn } from 'cn'
@@ -12,6 +12,7 @@ import { cn } from 'cn'
 import { BookCard } from '@/components/book-card'
 import { BookDetailsSheet } from '@/components/book-details-sheet'
 import { LibrarySetup } from '@/components/library-setup'
+import { SettingsSheet } from '@/components/settings-sheet'
 import {
   EMPTY_FILTERS,
   SearchDialog,
@@ -57,6 +58,7 @@ export default function App() {
   const [booksLoaded, setBooksLoaded] = useState(false)
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [importing, setImporting] = useState<{
     current: number
@@ -276,24 +278,14 @@ export default function App() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontalIcon />
-                  <span className="sr-only">Library options</span>
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => void chooseLibrary()}>
-                Change library folder...
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => void importCalibreLibrary()}>
-                Import from Calibre...
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <SettingsIcon />
+            <span className="sr-only">Settings</span>
+          </Button>
         </div>
       </header>
 
@@ -353,6 +345,20 @@ export default function App() {
         filters={filters}
         onFiltersChange={setFilters}
         resultCount={filtered.length}
+      />
+
+      <SettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        libraryPath={summary.libraryPath}
+        onChooseLibrary={() => {
+          setSettingsOpen(false)
+          void chooseLibrary()
+        }}
+        onImportFromCalibre={() => {
+          setSettingsOpen(false)
+          void importCalibreLibrary()
+        }}
       />
 
       <BookDetailsSheet
