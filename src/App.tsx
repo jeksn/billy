@@ -3,8 +3,6 @@ import { toast } from 'sonner'
 import {
   BookIcon,
   FilePlus2Icon,
-  LayoutGridIcon,
-  ListIcon,
   SearchIcon,
   SettingsIcon,
 } from 'lucide-react'
@@ -39,10 +37,6 @@ import {
 } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from '@/components/ui/toggle-group'
 import { usePersistentState } from '@/hooks/use-persistent-state'
 import {
   getBooks,
@@ -306,45 +300,6 @@ export default function App() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <ToggleGroup
-            variant="outline"
-            size="sm"
-            value={[viewMode]}
-            onValueChange={(value) => {
-              const next = value[value.length - 1]
-              if (next === 'grid' || next === 'list') {
-                setViewMode(next)
-              }
-            }}
-          >
-            <ToggleGroupItem value="grid">
-              <LayoutGridIcon />
-              <span className="sr-only">Grid view</span>
-            </ToggleGroupItem>
-            <ToggleGroupItem value="list">
-              <ListIcon />
-              <span className="sr-only">List view</span>
-            </ToggleGroupItem>
-          </ToggleGroup>
-
-          {viewMode === 'grid' && (
-            <ToggleGroup
-              variant="outline"
-              size="sm"
-              value={[gridSize]}
-              onValueChange={(value) => {
-                const next = value[value.length - 1]
-                if (next === 'small' || next === 'medium' || next === 'large') {
-                  setGridSize(next)
-                }
-              }}
-            >
-              <ToggleGroupItem value="small">S</ToggleGroupItem>
-              <ToggleGroupItem value="medium">M</ToggleGroupItem>
-              <ToggleGroupItem value="large">L</ToggleGroupItem>
-            </ToggleGroup>
-          )}
-
           <Button
             variant="ghost"
             size="icon"
@@ -420,6 +375,10 @@ export default function App() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         libraryPath={summary.libraryPath}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        gridSize={gridSize}
+        onGridSizeChange={setGridSize}
         onChooseLibrary={() => {
           setSettingsOpen(false)
           void chooseLibrary()

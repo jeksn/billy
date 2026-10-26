@@ -1,5 +1,11 @@
 import { useTheme } from 'next-themes'
-import { BookOpenIcon, FolderOpenIcon, SettingsIcon } from 'lucide-react'
+import {
+  BookOpenIcon,
+  FolderOpenIcon,
+  LayoutGridIcon,
+  ListIcon,
+  SettingsIcon,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -18,18 +24,32 @@ const THEME_OPTIONS = [
   { value: 'dark', label: 'Dark' },
 ] as const
 
+const GRID_SIZE_OPTIONS = [
+  { value: 'small', label: 'Small' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'large', label: 'Large' },
+] as const
+
 export function SettingsSheet({
   open,
   onOpenChange,
   libraryPath,
   onChooseLibrary,
   onImportFromCalibre,
+  viewMode,
+  onViewModeChange,
+  gridSize,
+  onGridSizeChange,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   libraryPath: string | null
   onChooseLibrary: () => void
   onImportFromCalibre: () => void
+  viewMode: 'grid' | 'list'
+  onViewModeChange: (mode: 'grid' | 'list') => void
+  gridSize: 'small' | 'medium' | 'large'
+  onGridSizeChange: (size: 'small' | 'medium' | 'large') => void
 }) {
   const { theme, setTheme } = useTheme()
 
@@ -66,6 +86,56 @@ export function SettingsSheet({
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
+          </section>
+
+          <Separator />
+
+          <section className="flex flex-col gap-2">
+            <h2 className="text-xs font-medium text-muted-foreground">
+              Layout
+            </h2>
+            <ToggleGroup
+              variant="outline"
+              value={[viewMode]}
+              onValueChange={(value) => {
+                const next = value[value.length - 1]
+                if (next === 'grid' || next === 'list') {
+                  onViewModeChange(next)
+                }
+              }}
+            >
+              <ToggleGroupItem value="grid">
+                <LayoutGridIcon />
+                Grid
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list">
+                <ListIcon />
+                List
+              </ToggleGroupItem>
+            </ToggleGroup>
+
+            {viewMode === 'grid' && (
+              <ToggleGroup
+                variant="outline"
+                value={[gridSize]}
+                onValueChange={(value) => {
+                  const next = value[value.length - 1]
+                  if (
+                    next === 'small' ||
+                    next === 'medium' ||
+                    next === 'large'
+                  ) {
+                    onGridSizeChange(next)
+                  }
+                }}
+              >
+                {GRID_SIZE_OPTIONS.map((option) => (
+                  <ToggleGroupItem key={option.value} value={option.value}>
+                    {option.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            )}
           </section>
 
           <Separator />
