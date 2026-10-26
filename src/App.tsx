@@ -81,6 +81,10 @@ export default function App() {
     'billy.gridSize',
     'medium',
   )
+  const [sortMode, setSortMode] = usePersistentState<SortMode>(
+    'billy.sortMode',
+    'author',
+  )
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [importing, setImporting] = useState<{
     current: number
@@ -89,7 +93,7 @@ export default function App() {
 
   const refreshBooks = useCallback(async () => {
     try {
-      setBooks(sortBooks(await getBooks()))
+      setBooks(await getBooks())
     } catch (error) {
       toast.error(String(error))
     } finally {
@@ -189,9 +193,14 @@ export default function App() {
     await runImport((onEvent) => importFromCalibre(path, onEvent))
   }
 
+  const sortedBooks = useMemo(
+    () => sortBooks(books, sortMode),
+    [books, sortMode],
+  )
+
   const filtered = useMemo(() => {
     const q = filters.query.trim().toLowerCase()
-    return books.filter((book) => {
+    return sortedBooks.filter((book) => {
       if (
         q &&
         !book.title.toLowerCase().includes(q) &&
@@ -219,7 +228,7 @@ export default function App() {
       }
       return true
     })
-  }, [books, filters])
+  }, [sortedBooks, filters])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -379,6 +388,8 @@ export default function App() {
         onViewModeChange={setViewMode}
         gridSize={gridSize}
         onGridSizeChange={setGridSize}
+        sortMode={sortMode}
+        onSortModeChange={setSortMode}
         onChooseLibrary={() => {
           setSettingsOpen(false)
           void chooseLibrary()
@@ -397,11 +408,35 @@ export default function App() {
   )
 }
 
-function sortBooks(books: Awaited<ReturnType<typeof getBooks>>) {
-  return [...books].sort((a, b) => {
-    const authorA = (a.author ?? '\uffff').toLowerCase()
-    const authorB = (b.author ?? '\uffff').toLowerCase()
-    if (authorA !== authorB) return authorA.localeCompare(authorB)
-    return a.title.localeCompare(b.title)
-  })
+export type SortMode = 'author' | 'title' | 'recent' | 'year'
+
+function sortBooks(books: Book[], mode: SortMode): Book[] {
+  const sorted = [...books]
+  switch (mode) {
+    case 'title':
+      sorted.sort(
+        (a, b) =>
+          a.title.localeCompare(b.title) ||
+          (a.author ?? '').localeCompare(b.author ?? ''),
+      )
+      break
+    case 'recent':
+      sorted.sort((a, b) => b.importedAt.localeCompare(a.importedAt))
+      break
+    case 'year':
+      sorted.sort(
+        (a, b) =>
+          (b.year ?? -1) - (a.year ?? -1) || a.title.localeCompare(b.title),
+      )
+      break
+    case 'author':
+      sorted.sort((a, b) => {
+        const authorA = (a.author ?? '\uffff').toLowerCase()
+        const authorB = (b.author ?? '\uffff').toLowerCase()
+        if (authorA !== authorB) return authorA.localeCompare(authorB)
+        return a.title.localeCompare(b.title)
+      })
+      break
+  }
+  return sorted
 }

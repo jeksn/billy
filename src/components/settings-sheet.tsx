@@ -30,6 +30,13 @@ const GRID_SIZE_OPTIONS = [
   { value: 'large', label: 'Large' },
 ] as const
 
+const SORT_OPTIONS = [
+  { value: 'author', label: 'Author' },
+  { value: 'title', label: 'Title' },
+  { value: 'recent', label: 'Recently imported' },
+  { value: 'year', label: 'Year' },
+] as const
+
 export function SettingsSheet({
   open,
   onOpenChange,
@@ -40,6 +47,8 @@ export function SettingsSheet({
   onViewModeChange,
   gridSize,
   onGridSizeChange,
+  sortMode,
+  onSortModeChange,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -50,6 +59,8 @@ export function SettingsSheet({
   onViewModeChange: (mode: 'grid' | 'list') => void
   gridSize: 'small' | 'medium' | 'large'
   onGridSizeChange: (size: 'small' | 'medium' | 'large') => void
+  sortMode: 'author' | 'title' | 'recent' | 'year'
+  onSortModeChange: (mode: 'author' | 'title' | 'recent' | 'year') => void
 }) {
   const { theme, setTheme } = useTheme()
 
@@ -136,6 +147,39 @@ export function SettingsSheet({
                 ))}
               </ToggleGroup>
             )}
+          </section>
+
+          <Separator />
+
+          <section className="flex flex-col gap-2">
+            <h2 className="text-xs font-medium text-muted-foreground">
+              Sort
+            </h2>
+            <ToggleGroup
+              variant="outline"
+              value={[sortMode]}
+              onValueChange={(value) => {
+                const next = value[value.length - 1]
+                if (
+                  next === 'author' ||
+                  next === 'title' ||
+                  next === 'recent' ||
+                  next === 'year'
+                ) {
+                  onSortModeChange(next)
+                }
+              }}
+            >
+              {SORT_OPTIONS.map((option) => (
+                <ToggleGroupItem
+                  key={option.value}
+                  value={option.value}
+                  className="flex-1"
+                >
+                  {option.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
           </section>
 
           <Separator />
