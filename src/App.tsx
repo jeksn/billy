@@ -233,7 +233,7 @@ export default function App() {
       <header
         data-tauri-drag-region
         className={cn(
-          'sticky top-0 z-20 flex items-center gap-3 border-b bg-background/80 px-6 py-3.5 backdrop-blur',
+          'sticky top-0 z-20 flex items-center gap-3 bg-muted/40 px-6 py-3.5 backdrop-blur',
           IS_MAC && 'pl-20',
         )}
       >
@@ -332,7 +332,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="sticky bottom-0 border-t bg-background/80 px-6 py-1.5 text-xs text-muted-foreground backdrop-blur">
+      <footer className="sticky bottom-0 bg-muted/40 px-6 py-1.5 text-xs text-muted-foreground backdrop-blur">
         {filtered.length === books.length
           ? `${books.length} ${books.length === 1 ? 'book' : 'books'}`
           : `${filtered.length} of ${books.length} books`}
