@@ -3,18 +3,23 @@ import { BookIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { coverUrl, type Book } from '@/lib/api'
 import { formatSize } from '@/lib/format'
+import type { ReadingProgress } from '@/lib/progress'
 
 export function BookList({
   books,
   onSelect,
+  progressMap,
 }: {
   books: Book[]
   onSelect: (book: Book) => void
+  progressMap: Map<string, ReadingProgress>
 }) {
   return (
     <div className="flex flex-col gap-0.5">
       {books.map((book) => {
         const cover = coverUrl(book)
+        const progress = progressMap.get(book.id)?.percent
+        const showProgress = progress !== undefined && progress > 0
         return (
           <button
             key={book.id}
@@ -52,6 +57,11 @@ export function BookList({
             <span className="hidden w-12 text-sm text-muted-foreground lg:block">
               {book.year ?? ''}
             </span>
+            {showProgress && (
+              <span className="w-10 text-xs text-primary">
+                {progress}%
+              </span>
+            )}
             <Badge variant="secondary" className="uppercase">
               {book.format}
             </Badge>

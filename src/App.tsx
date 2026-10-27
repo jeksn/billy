@@ -54,6 +54,11 @@ import {
   type Book,
   type ImportEvent,
 } from '@/lib/api'
+import {
+  isInProgress,
+  loadAllProgress,
+  type ReadingProgress,
+} from '@/lib/progress'
 
 type ViewMode = 'grid' | 'list'
 type GridSize = 'small' | 'medium' | 'large'
@@ -77,6 +82,17 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [readingBook, setReadingBook] = useState<Book | null>(null)
+  const [progressMap, setProgressMap] = useState<
+    Map<string, ReadingProgress>
+  >(new Map())
+
+  const refreshProgress = useCallback(() => {
+    setProgressMap(loadAllProgress())
+  }, [])
+
+  useEffect(() => {
+    refreshProgress()
+  }, [refreshProgress])
   const [viewMode, setViewMode] = usePersistentState<ViewMode>(
     'billy.viewMode',
     'grid',
@@ -245,6 +261,15 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
+  const currentlyReading = useMemo(() => {
+    return books
+      .filter((book) => isInProgress(progressMap.get(book.id)))
+      .sort(
+        (a, b) =>
+          (progressMap.get(b.id)?.at ?? 0) - (progressMap.get(a.id)?.at ?? 0),
+      )
+  }, [books, progressMap])
+
   if (summary === null || !booksLoaded) {
     return (
       <div className="grid grid-cols-2 gap-4 p-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
@@ -354,6 +379,23 @@ export default function App() {
       </header>
 
       <main className="flex-1 bg-muted/40 p-6">
+        {currentlyReading.length > 0 && !hasActiveFilters(filters) && (
+          <section className="mb-6 flex flex-col gap-3">
+            <h2 className="text-sm font-medium">Continue reading</h2>
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {currentlyReading.map((book) => (
+                <div key={book.id} className="w-32 shrink-0">
+                  <BookCard
+                    book={book}
+                    progress={progressMap.get(book.id)?.percent}
+                    onSelect={() => setReadingBook(book)}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {filtered.length === 0 ? (
         books.length === 0 ? (
           <Empty className="min-h-96 border">
@@ -384,13 +426,18 @@ export default function App() {
           </Empty>
         )
         ) : viewMode === 'list' ? (
-          <BookList books={filtered} onSelect={setSelectedBook} />
+          <BookList
+            books={filtered}
+            onSelect={setSelectedBook}
+            progressMap={progressMap}
+          />
         ) : (
           <div className={cn('grid gap-4', GRID_SIZES[gridSize])}>
             {filtered.map((book) => (
               <BookCard
                 key={book.id}
                 book={book}
+                progress={progressMap.get(book.id)?.percent}
                 onSelect={() => setSelectedBook(book)}
               />
             ))}
@@ -447,7 +494,10 @@ export default function App() {
       {readingBook && (
         <ReaderView
           book={readingBook}
-          onClose={() => setReadingBook(null)}
+          onClose={() => {
+            setReadingBook(null)
+            refreshProgress()
+          }}
         />
       )}
     </div>

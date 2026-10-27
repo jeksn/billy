@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from 'cn'
 import { usePersistentState } from '@/hooks/use-persistent-state'
+import { loadProgress, saveProgress } from '@/lib/progress'
 import { readBook, type Book } from '@/lib/api'
 
 interface TocItem {
@@ -44,23 +45,6 @@ interface FoliateView extends HTMLElement {
 
 const IS_MAC = /Mac/i.test(navigator.userAgent)
 
-function progressKey(id: string) {
-  return `billy.progress.${id}`
-}
-
-function loadProgress(id: string): string | null {
-  const raw = localStorage.getItem(progressKey(id))
-  if (raw === null) return null
-  try {
-    return (JSON.parse(raw) as { cfi?: string }).cfi ?? null
-  } catch {
-    return null
-  }
-}
-
-function saveProgress(id: string, cfi: string) {
-  localStorage.setItem(progressKey(id), JSON.stringify({ cfi }))
-}
 
 function TocList({
   items,
@@ -127,7 +111,12 @@ export function ReaderView({
         setPercent(Math.round(detail.fraction * 100))
       }
       if (detail.cfi) {
-        saveProgress(book.id, detail.cfi)
+        saveProgress(
+          book.id,
+          detail.cfi,
+          (detail.fraction ?? 0) * 100,
+          Date.now(),
+        )
       }
     })
 

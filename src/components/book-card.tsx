@@ -6,11 +6,15 @@ import { coverUrl, type Book } from '@/lib/api'
 export function BookCard({
   book,
   onSelect,
+  progress,
 }: {
   book: Book
   onSelect: () => void
+  /** Reading progress in percent, if the book has been started. */
+  progress?: number | null
 }) {
   const cover = coverUrl(book)
+  const showProgress = typeof progress === 'number' && progress > 0
 
   return (
     <button
@@ -34,16 +38,25 @@ export function BookCard({
         <Badge className="absolute right-1.5 bottom-1.5 uppercase">
           {book.format}
         </Badge>
+        {showProgress && (
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-black/20">
+            <div
+              className="h-full bg-primary"
+              style={{ width: `${Math.min(100, progress!)}%` }}
+            />
+          </div>
+        )}
       </div>
       <div className="flex flex-col">
         <span className="truncate text-sm font-medium" title={book.title}>
           {book.title}
         </span>
         <span
-          className="truncate text-xs text-muted-foreground"
+          className="flex items-baseline gap-1 truncate text-xs text-muted-foreground"
           title={book.author ?? undefined}
         >
-          {book.author ?? 'Unknown author'}
+          <span className="truncate">{book.author ?? 'Unknown author'}</span>
+          {showProgress && <span className="shrink-0">{progress}%</span>}
         </span>
       </div>
     </button>
