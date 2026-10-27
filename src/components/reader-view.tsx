@@ -197,7 +197,7 @@ export function ReaderView({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background">
+    <div className="reader-surface fixed inset-0 z-50 bg-background">
       {/* Book content fills the entire window; chrome floats on top. */}
       <div ref={containerRef} className="absolute inset-0" />
 
