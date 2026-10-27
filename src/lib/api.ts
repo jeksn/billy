@@ -95,6 +95,10 @@ export async function openBook(path: string): Promise<void> {
   await invoke('open_book', { path })
 }
 
+export async function readBook(path: string): Promise<ArrayBuffer> {
+  return invoke<ArrayBuffer>('read_book', { path })
+}
+
 export async function updateBookMetadata(
   id: string,
   title: string,

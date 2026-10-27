@@ -47,6 +47,7 @@ export function BookDetailsSheet({
   onClose,
   onDelete,
   onMetadataSave,
+  onRead,
 }: {
   book: Book | null
   onClose: () => void
@@ -57,6 +58,7 @@ export function BookDetailsSheet({
     author: string | null,
     year: number | null,
   ) => Promise<Book>
+  onRead: (book: Book) => void
 }) {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -152,13 +154,17 @@ export function BookDetailsSheet({
                 <Button
                   className="flex-1"
                   onClick={() => {
-                    openBook(book.path).catch((error) =>
-                      toast.error(String(error)),
-                    )
+                    if (book.format === 'epub') {
+                      onRead(book)
+                    } else {
+                      openBook(book.path).catch((error) =>
+                        toast.error(String(error)),
+                      )
+                    }
                   }}
                 >
                   <BookOpenIcon data-icon="inline-start" />
-                  Open
+                  {book.format === 'epub' ? 'Read' : 'Open'}
                 </Button>
                 <Button
                   variant="outline"

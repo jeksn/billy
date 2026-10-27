@@ -217,6 +217,30 @@ async fn open_book(app: AppHandle, path: String) -> Result<(), AppError> {
     .await
 }
 
+/// Read a book file inside the library as raw bytes for the frontend reader.
+/// The path is canonicalized and checked against the library root.
+#[tauri::command]
+async fn read_book(
+    app: AppHandle,
+    path: String,
+) -> Result<tauri::ipc::Response, AppError> {
+    run_blocking(app, move |app| {
+        let state = app.state::<SharedState>();
+        state.with_library(|lib| {
+            let root = lib.root.canonicalize()?;
+            let file = PathBuf::from(&path)
+                .canonicalize()
+                .map_err(|_| AppError::msg("book file not found"))?;
+            if !file.starts_with(&root) {
+                return Err(AppError::msg("path is outside the library"));
+            }
+            let bytes = std::fs::read(&file)?;
+            Ok(tauri::ipc::Response::new(bytes))
+        })
+    })
+    .await
+}
+
 #[tauri::command]
 async fn delete_book(app: AppHandle, id: String) -> Result<(), AppError> {
     run_blocking(app, move |app| {
@@ -266,7 +290,8 @@ pub fn run() {
             import_from_calibre,
             delete_book,
             update_book_metadata,
-            open_book
+            open_book,
+            read_book
         ])
         .run(tauri::generate_context!())
         .expect("error while running billy");

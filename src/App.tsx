@@ -13,6 +13,7 @@ import { BookCard } from '@/components/book-card'
 import { BookDetailsSheet } from '@/components/book-details-sheet'
 import { BookList } from '@/components/book-list'
 import { LibrarySetup } from '@/components/library-setup'
+import { ReaderView } from '@/components/reader-view'
 import { SettingsSheet } from '@/components/settings-sheet'
 import {
   EMPTY_FILTERS,
@@ -75,6 +76,7 @@ export default function App() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
   const [searchOpen, setSearchOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [readingBook, setReadingBook] = useState<Book | null>(null)
   const [viewMode, setViewMode] = usePersistentState<ViewMode>(
     'billy.viewMode',
     'grid',
@@ -436,7 +438,18 @@ export default function App() {
         onClose={() => setSelectedBook(null)}
         onDelete={handleDelete}
         onMetadataSave={handleMetadataSave}
+        onRead={(book) => {
+          setSelectedBook(null)
+          setReadingBook(book)
+        }}
       />
+
+      {readingBook && (
+        <ReaderView
+          book={readingBook}
+          onClose={() => setReadingBook(null)}
+        />
+      )}
     </div>
   )
 }

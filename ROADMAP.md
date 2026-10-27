@@ -24,12 +24,16 @@ features. Check items off as they ship.
 
 ## Phase 2 — Reading
 
-- [ ] In-app EPUB reader (webview-based renderer; foliate-js or epub.js as
-      candidates)
-- [ ] Replace the details-sheet "Open" button with the in-app reader (today it
-      just hands the file to Apple Books via the system default)
+- [x] In-app EPUB reader — foliate-js (npm 1.0.1), paginated, TOC sidebar,
+      font-size controls, keyboard nav, per-book position saved to
+      localStorage
+- [x] Replace the details-sheet "Open" button with the in-app reader (EPUB
+      opens in-app as "Read"; PDF still hands off to the system until PDF
+      rendering exists)
 - [ ] PDF cover rendering from page 1 (needs a PDF rasterizer; pdfium-rs or
       mupdf — native dependency decision required)
+- [ ] Reader polish candidates: scrolled mode toggle, theme override (paper /
+      dark), bookmarks, search within book
 
 ## Phase 3 — Send to e-reader
 
