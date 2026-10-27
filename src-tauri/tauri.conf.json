@@ -22,7 +22,7 @@
             }
         ],
         "security": {
-            "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'",
+            "csp": "default-src 'self' blob:; script-src 'self'; style-src 'self' blob: 'unsafe-inline'; img-src 'self' blob: data: asset: http://asset.localhost; connect-src 'self' blob: data:; frame-src blob: data:; object-src blob: data:; form-action 'none'",
             "assetProtocol": {
                 "enable": true,
                 "scope": []
