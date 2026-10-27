@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from 'cn'
 import { usePersistentState } from '@/hooks/use-persistent-state'
-import { loadProgress, saveProgress } from '@/lib/progress'
+import { saveProgress } from '@/lib/progress'
 import { readBook, type Book } from '@/lib/api'
 
 interface TocItem {
@@ -78,9 +78,12 @@ function TocList({
 
 export function ReaderView({
   book,
+  resumeCfi,
   onClose,
 }: {
   book: Book
+  /** Saved location to restore, if the book has been started. */
+  resumeCfi: string | null
   onClose: () => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -111,7 +114,7 @@ export function ReaderView({
         setPercent(Math.round(detail.fraction * 100))
       }
       if (detail.cfi) {
-        saveProgress(
+        void saveProgress(
           book.id,
           detail.cfi,
           (detail.fraction ?? 0) * 100,
@@ -140,8 +143,7 @@ export function ReaderView({
         renderer?.setAttribute?.('max-inline-size', '720px')
         renderer?.setStyles?.(`html { font-size: ${fontSize}% }`)
         setToc(view.book.toc ?? [])
-        const cfi = loadProgress(book.id)
-        await view.goTo(cfi ?? 0)
+        await view.goTo(resumeCfi ?? 0)
         setStatus('ready')
       } catch (error) {
         if (!cancelled) {
@@ -158,7 +160,7 @@ export function ReaderView({
       viewRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [book.id, book.path])
+  }, [book.id, book.path, resumeCfi])
 
   useEffect(() => {
     if (status !== 'ready') return

@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import {
   BookIcon,
+  BookOpenIcon,
   FilePlus2Icon,
   SearchIcon,
   SettingsIcon,
@@ -62,7 +63,8 @@ import {
   clearProgress,
   isInProgress,
   loadAllProgress,
-  markCompleted,
+  migrateLegacyProgress,
+  saveProgress,
   statusOf,
   type ReadingProgress,
 } from '@/lib/progress'
@@ -94,12 +96,15 @@ export default function App() {
   >(new Map())
   const [pendingDelete, setPendingDelete] = useState<Book | null>(null)
 
-  const refreshProgress = useCallback(() => {
-    setProgressMap(loadAllProgress())
+  const refreshProgress = useCallback(async () => {
+    setProgressMap(await loadAllProgress())
   }, [])
 
   useEffect(() => {
-    refreshProgress()
+    void (async () => {
+      await migrateLegacyProgress()
+      await refreshProgress()
+    })()
   }, [refreshProgress])
   const [viewMode, setViewMode] = usePersistentState<ViewMode>(
     'billy.viewMode',
@@ -196,6 +201,7 @@ export default function App() {
         })
       }
       await refreshBooks()
+      await refreshProgress()
     } catch (error) {
       toast.error(String(error))
     } finally {
@@ -215,8 +221,8 @@ export default function App() {
     await runImport((onEvent) => importFolder(path, onEvent))
   }
 
-  const importCalibreLibrary = async () => {
-    const path = await pickFolder('Select your Calibre Library folder')
+  const importCalibreLibrary = async (calibrePath?: string) => {
+    const path = calibrePath ?? (await pickFolder('Select your Calibre Library folder'))
     if (!path) return
     await runImport((onEvent) => importFromCalibre(path, onEvent))
   }
@@ -306,7 +312,7 @@ export default function App() {
     try {
       await deleteBook(book.id)
       setSelectedBook(null)
-      await refreshBooks()
+      await Promise.all([refreshBooks(), refreshProgress()])
       toast.success(`Deleted "${book.title}"`)
     } catch (error) {
       toast.error(String(error))
@@ -331,15 +337,20 @@ export default function App() {
     }
   }
 
-  const handleMarkComplete = (book: Book) => {
-    markCompleted(book.id)
-    refreshProgress()
+  const handleMarkComplete = async (book: Book) => {
+    await saveProgress(
+      book.id,
+      progressMap.get(book.id)?.cfi ?? null,
+      100,
+      Date.now(),
+    )
+    await refreshProgress()
     toast.success(`Marked "${book.title}" as completed`)
   }
 
-  const handleMarkUnread = (book: Book) => {
-    clearProgress(book.id)
-    refreshProgress()
+  const handleMarkUnread = async (book: Book) => {
+    await clearProgress(book.id)
+    await refreshProgress()
     toast.success(`Marked "${book.title}" as unread`)
   }
 
@@ -462,10 +473,22 @@ export default function App() {
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Button onClick={() => void importPickedFiles()}>
-                <FilePlus2Icon data-icon="inline-start" />
-                Import books
-              </Button>
+              {summary.calibreLibraryPath ? (
+                <>
+                  <Button onClick={() => void importCalibreLibrary(summary.calibreLibraryPath!)}>
+                    <BookOpenIcon data-icon="inline-start" />
+                    Migrate from Calibre
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Found your Calibre library at {summary.calibreLibraryPath}
+                  </span>
+                </>
+              ) : (
+                <Button onClick={() => void importPickedFiles()}>
+                  <FilePlus2Icon data-icon="inline-start" />
+                  Import books
+                </Button>
+              )}
             </EmptyContent>
           </Empty>
         ) : (
@@ -551,9 +574,10 @@ export default function App() {
       {readingBook && (
         <ReaderView
           book={readingBook}
+          resumeCfi={progressMap.get(readingBook.id)?.cfi ?? null}
           onClose={() => {
             setReadingBook(null)
-            refreshProgress()
+            void refreshProgress()
           }}
         />
       )}

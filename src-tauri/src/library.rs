@@ -106,7 +106,26 @@ impl Library {
         }
 
         db::delete_book(&self.conn, id)?;
+        db::delete_progress(&self.conn, id)?;
         Ok(())
+    }
+
+    pub fn get_progress(&self) -> Result<Vec<db::ProgressRow>, AppError> {
+        db::get_progress(&self.conn)
+    }
+
+    pub fn save_progress(
+        &self,
+        book_id: &str,
+        cfi: Option<&str>,
+        percent: i64,
+        at: i64,
+    ) -> Result<(), AppError> {
+        db::upsert_progress(&self.conn, book_id, cfi, percent, at)
+    }
+
+    pub fn clear_progress(&self, book_id: &str) -> Result<(), AppError> {
+        db::delete_progress(&self.conn, book_id)
     }
 
     /// Update title/author/year, moving the book's folder and file to match
@@ -273,7 +292,15 @@ impl Library {
             .cover
             .as_deref()
             .zip(meta.cover_ext.as_deref());
-        self.store_book(path, &title, author.as_deref(), &ext, cover, meta.year)
+        self.store_book(
+            path,
+            &title,
+            author.as_deref(),
+            &ext,
+            cover,
+            meta.year,
+            false,
+        )
     }
 
     /// Shared import path: duplicate check, copy into the library layout,
@@ -289,6 +316,7 @@ impl Library {
         format: &str,
         cover: Option<(&[u8], &str)>,
         year: Option<i64>,
+        completed: bool,
     ) -> Result<Book, ImportOneError> {
         let failed = |e: std::io::Error| ImportOneError::Failed(e.to_string());
 
@@ -298,6 +326,21 @@ impl Library {
             if let Some(year) = year {
                 db::update_book_year(&self.conn, &duplicate_id, year)
                     .map_err(|e| ImportOneError::Failed(e.to_string()))?;
+            }
+            // Backfill completed status onto an existing book that has none.
+            if completed {
+                let existing = db::get_progress_for(&self.conn, &duplicate_id)
+                    .map_err(|e| ImportOneError::Failed(e.to_string()))?;
+                if existing.is_none() {
+                    db::upsert_progress(
+                        &self.conn,
+                        &duplicate_id,
+                        None,
+                        100,
+                        crate::now_ms(),
+                    )
+                    .map_err(|e| ImportOneError::Failed(e.to_string()))?;
+                }
             }
             return Err(ImportOneError::Skipped(
                 "already in the library".into(),
@@ -330,6 +373,10 @@ impl Library {
         };
         db::insert_book(&self.conn, &new_book)
             .map_err(|e| ImportOneError::Failed(e.to_string()))?;
+        if completed {
+            db::upsert_progress(&self.conn, &id, None, 100, crate::now_ms())
+                .map_err(|e| ImportOneError::Failed(e.to_string()))?;
+        }
 
         Ok(Book {
             id,
@@ -428,6 +475,7 @@ impl Library {
             &entry.format,
             cover_ref,
             entry.year,
+            entry.completed,
         )
     }
 

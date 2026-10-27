@@ -15,6 +15,13 @@ features. Check items off as they ship.
 - [x] Book details sidebar with reveal-in-folder
 - [x] Settings pane: theme (system/light/dark), layout, sort, library
 - [x] Native-feeling chrome: overlay titlebar, drag region, dark mode
+- [x] In-app EPUB reader (foliate-js): paginated, TOC, font size, position
+      restore, immersive full-window layout
+- [x] Reading progress in billy.db (travels with the library folder),
+      continue-reading row, card/list indicators, completed status
+- [x] Calibre migration: read status from a boolean custom column
+      (#read / #finished / #done / #completed) carried over as completed;
+      first-run "Migrate from Calibre" offer when ~/Calibre Library exists
 
 ## Phase 1 — Library management
 

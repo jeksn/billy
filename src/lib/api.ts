@@ -16,6 +16,8 @@ export interface Book {
 export interface AppStateSummary {
   libraryPath: string | null
   bookCount: number
+  /** Path to ~/Calibre Library when one exists, for first-run migration. */
+  calibreLibraryPath: string | null
 }
 
 export type ImportEvent =

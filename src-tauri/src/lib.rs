@@ -20,6 +20,35 @@ use library::{Book, ImportEvent, Library};
 pub struct AppStateSummary {
     pub library_path: Option<String>,
     pub book_count: u32,
+    /// Path to ~/Calibre Library, if one exists (used for first-run migration).
+    pub calibre_library_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProgressEntry {
+    pub book_id: String,
+    pub cfi: Option<String>,
+    pub percent: i64,
+    pub at: i64,
+}
+
+fn detect_calibre_library(app: &AppHandle) -> Option<String> {
+    let home = app.path().home_dir().ok()?;
+    let dir = home.join("Calibre Library");
+    if dir.join("metadata.db").is_file() {
+        Some(dir.to_string_lossy().into_owned())
+    } else {
+        None
+    }
+}
+
+/// Current unix time in milliseconds.
+pub fn now_ms() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0)
 }
 
 #[derive(Default)]
@@ -61,10 +90,12 @@ async fn get_app_state(app: AppHandle) -> Result<AppStateSummary, AppError> {
             Some(lib) => Ok(AppStateSummary {
                 library_path: Some(lib.root.to_string_lossy().into_owned()),
                 book_count: lib.count()?,
+                calibre_library_path: detect_calibre_library(&app),
             }),
             None => Ok(AppStateSummary {
                 library_path: None,
                 book_count: 0,
+                calibre_library_path: detect_calibre_library(&app),
             }),
         }
     })
@@ -82,6 +113,7 @@ async fn set_library(app: AppHandle, path: String) -> Result<AppStateSummary, Ap
         let summary = AppStateSummary {
             library_path: Some(path.clone()),
             book_count: lib.count()?,
+            calibre_library_path: detect_calibre_library(&app),
         };
 
         let _ = app.asset_protocol_scope().allow_directory(root, true);
@@ -242,6 +274,50 @@ async fn read_book(
 }
 
 #[tauri::command]
+async fn get_progress(app: AppHandle) -> Result<Vec<ProgressEntry>, AppError> {
+    run_blocking(app, move |app| {
+        let state = app.state::<SharedState>();
+        state.with_library(|lib| {
+            Ok(lib
+                .get_progress()?
+                .into_iter()
+                .map(|row| ProgressEntry {
+                    book_id: row.book_id,
+                    cfi: row.cfi,
+                    percent: row.percent,
+                    at: row.at,
+                })
+                .collect())
+        })
+    })
+    .await
+}
+
+#[tauri::command]
+async fn save_progress(
+    app: AppHandle,
+    book_id: String,
+    cfi: Option<String>,
+    percent: i64,
+    at: i64,
+) -> Result<(), AppError> {
+    run_blocking(app, move |app| {
+        let state = app.state::<SharedState>();
+        state.with_library(|lib| lib.save_progress(&book_id, cfi.as_deref(), percent, at))
+    })
+    .await
+}
+
+#[tauri::command]
+async fn clear_progress(app: AppHandle, book_id: String) -> Result<(), AppError> {
+    run_blocking(app, move |app| {
+        let state = app.state::<SharedState>();
+        state.with_library(|lib| lib.clear_progress(&book_id))
+    })
+    .await
+}
+
+#[tauri::command]
 async fn delete_book(app: AppHandle, id: String) -> Result<(), AppError> {
     run_blocking(app, move |app| {
         let state = app.state::<SharedState>();
@@ -291,7 +367,10 @@ pub fn run() {
             delete_book,
             update_book_metadata,
             open_book,
-            read_book
+            read_book,
+            get_progress,
+            save_progress,
+            clear_progress
         ])
         .run(tauri::generate_context!())
         .expect("error while running billy");

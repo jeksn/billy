@@ -42,7 +42,13 @@ pub fn migrate(conn: &Connection) -> Result<(), AppError> {
             imported_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
         CREATE INDEX IF NOT EXISTS idx_books_author ON books(author);
-        CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);",
+        CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
+        CREATE TABLE IF NOT EXISTS progress (
+            book_id TEXT PRIMARY KEY,
+            cfi     TEXT,
+            percent INTEGER NOT NULL DEFAULT 0,
+            at      INTEGER NOT NULL DEFAULT 0
+        );",
     )?;
     // Migration for libraries created before the year column existed.
     let mut stmt = conn.prepare("PRAGMA table_info(books)")?;
@@ -200,5 +206,76 @@ pub fn update_book_metadata(
 
 pub fn delete_book(conn: &Connection, id: &str) -> Result<(), AppError> {
     conn.execute("DELETE FROM books WHERE id = ?1", params![id])?;
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub struct ProgressRow {
+    pub book_id: String,
+    pub cfi: Option<String>,
+    pub percent: i64,
+    pub at: i64,
+}
+
+pub fn upsert_progress(
+    conn: &Connection,
+    book_id: &str,
+    cfi: Option<&str>,
+    percent: i64,
+    at: i64,
+) -> Result<(), AppError> {
+    conn.execute(
+        "INSERT INTO progress (book_id, cfi, percent, at) VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT(book_id) DO UPDATE SET cfi = ?2, percent = ?3, at = ?4",
+        params![book_id, cfi, percent, at],
+    )?;
+    Ok(())
+}
+
+pub fn get_progress(conn: &Connection) -> Result<Vec<ProgressRow>, AppError> {
+    let mut stmt =
+        conn.prepare("SELECT book_id, cfi, percent, at FROM progress")?;
+    let rows = stmt.query_map([], |row| {
+        Ok(ProgressRow {
+            book_id: row.get(0)?,
+            cfi: row.get(1)?,
+            percent: row.get(2)?,
+            at: row.get(3)?,
+        })
+    })?;
+    let mut out = Vec::new();
+    for row in rows {
+        out.push(row?);
+    }
+    Ok(out)
+}
+
+pub fn get_progress_for(
+    conn: &Connection,
+    book_id: &str,
+) -> Result<Option<ProgressRow>, AppError> {
+    let row = conn
+        .query_row(
+            "SELECT book_id, cfi, percent, at FROM progress WHERE book_id = ?1",
+            params![book_id],
+            |row| {
+                Ok(ProgressRow {
+                    book_id: row.get(0)?,
+                    cfi: row.get(1)?,
+                    percent: row.get(2)?,
+                    at: row.get(3)?,
+                })
+            },
+        )
+        .map(Some)
+        .or_else(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => Ok(None),
+            other => Err(other),
+        })?;
+    Ok(row)
+}
+
+pub fn delete_progress(conn: &Connection, book_id: &str) -> Result<(), AppError> {
+    conn.execute("DELETE FROM progress WHERE book_id = ?1", params![book_id])?;
     Ok(())
 }

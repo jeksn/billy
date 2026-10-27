@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/core'
+
 export interface ReadingProgress {
   cfi: string | null
   percent: number
@@ -5,95 +7,81 @@ export interface ReadingProgress {
   at: number
 }
 
-const PREFIX = 'billy.progress.'
-
-export function loadProgress(id: string): string | null {
-  const raw = localStorage.getItem(PREFIX + id)
-  if (raw === null) return null
-  try {
-    return (JSON.parse(raw) as { cfi?: string }).cfi ?? null
-  } catch {
-    return null
-  }
+interface ProgressEntry {
+  bookId: string
+  cfi: string | null
+  percent: number
+  at: number
 }
 
-export function saveProgress(
-  id: string,
-  cfi: string,
-  percent: number,
-  at: number,
-) {
-  localStorage.setItem(
-    PREFIX + id,
-    JSON.stringify({ cfi, percent: Math.round(percent), at }),
+export async function loadAllProgress(): Promise<Map<string, ReadingProgress>> {
+  const entries = await invoke<ProgressEntry[]>('get_progress')
+  return new Map(
+    entries.map((entry) => [
+      entry.bookId,
+      { cfi: entry.cfi, percent: entry.percent, at: entry.at },
+    ]),
   )
 }
 
-export function loadAllProgress(): Map<string, ReadingProgress> {
-  const map = new Map<string, ReadingProgress>()
+export async function saveProgress(
+  id: string,
+  cfi: string | null,
+  percent: number,
+  at: number,
+) {
+  await invoke('save_progress', {
+    bookId: id,
+    cfi,
+    percent: Math.round(percent),
+    at,
+  })
+}
+
+export async function clearProgress(id: string) {
+  await invoke('clear_progress', { bookId: id })
+}
+
+export type ReadingStatus = 'unread' | 'in-progress' | 'completed'
+
+export function statusOf(progress: ReadingProgress | undefined): ReadingStatus {
+  if (!progress || progress.percent <= 0) return 'unread'
+  return progress.percent >= 100 ? 'completed' : 'in-progress'
+}
+
+export function isInProgress(progress: ReadingProgress | undefined) {
+  return statusOf(progress) === 'in-progress'
+}
+
+const LEGACY_PREFIX = 'billy.progress.'
+
+/**
+ * One-time migration from the old localStorage-backed progress format to the
+ * library database. Removes the legacy entries as it goes.
+ */
+export async function migrateLegacyProgress(): Promise<void> {
+  const keys: string[] = []
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)
-    if (!key?.startsWith(PREFIX)) continue
-    const id = key.slice(PREFIX.length)
+    if (key?.startsWith(LEGACY_PREFIX)) keys.push(key)
+  }
+  for (const key of keys) {
+    const id = key.slice(LEGACY_PREFIX.length)
     try {
       const raw = JSON.parse(localStorage.getItem(key) ?? '') as {
         cfi?: string
         percent?: number
         at?: number
       }
-      map.set(id, {
-        cfi: raw.cfi ?? null,
-        percent: typeof raw.percent === 'number' ? raw.percent : 0,
-        at: typeof raw.at === 'number' ? raw.at : 0,
-      })
+      await saveProgress(
+        id,
+        raw.cfi ?? null,
+        raw.percent ?? 0,
+        raw.at ?? 0,
+      )
     } catch {
-      // Ignore malformed entries
+      // Skip malformed entries but still remove them below.
     }
-  }
-  return map
-}
-
-/** A book counts as in-progress if it has been opened and is not finished. */
-export function isInProgress(progress: ReadingProgress | undefined) {
-  return (
-    progress !== undefined &&
-    progress.cfi !== null &&
-    progress.percent < 100
-  )
-}
-
-export type ReadingStatus = 'unread' | 'in-progress' | 'completed'
-
-export function statusOf(progress: ReadingProgress | undefined): ReadingStatus {
-  if (!progress || progress.cfi === null) return 'unread'
-  return progress.percent >= 100 ? 'completed' : 'in-progress'
-}
-
-export function markCompleted(id: string) {
-  const existing = loadProgressEntry(id)
-  saveProgress(id, existing?.cfi ?? '', 100, Date.now())
-}
-
-/** Forget all reading state for a book, returning it to unread. */
-export function clearProgress(id: string) {
-  localStorage.removeItem(PREFIX + id)
-}
-
-function loadProgressEntry(id: string): ReadingProgress | undefined {
-  const raw = localStorage.getItem(PREFIX + id)
-  if (raw === null) return undefined
-  try {
-    const entry = JSON.parse(raw) as {
-      cfi?: string
-      percent?: number
-      at?: number
-    }
-    return {
-      cfi: entry.cfi ?? null,
-      percent: typeof entry.percent === 'number' ? entry.percent : 0,
-      at: typeof entry.at === 'number' ? entry.at : 0,
-    }
-  } catch {
-    return undefined
+    localStorage.removeItem(key)
   }
 }
