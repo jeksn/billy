@@ -132,7 +132,7 @@ export function ReaderView({
     container.appendChild(view)
 
     const applyFontSize = () => {
-      view.renderer.setStyles?.(`html { font-size: ${fontSize}% }`)
+      view.renderer?.setStyles?.(`html { font-size: ${fontSize}% }`)
     }
 
     const open = async () => {
@@ -170,7 +170,8 @@ export function ReaderView({
   }, [book.id, book.path])
 
   useEffect(() => {
-    viewRef.current?.renderer.setStyles?.(`html { font-size: ${fontSize}% }`)
+    if (status !== 'ready') return
+    viewRef.current?.renderer?.setStyles?.(`html { font-size: ${fontSize}% }`)
   }, [fontSize, status])
 
   useEffect(() => {
