@@ -61,3 +61,39 @@ export function isInProgress(progress: ReadingProgress | undefined) {
     progress.percent < 100
   )
 }
+
+export type ReadingStatus = 'unread' | 'in-progress' | 'completed'
+
+export function statusOf(progress: ReadingProgress | undefined): ReadingStatus {
+  if (!progress || progress.cfi === null) return 'unread'
+  return progress.percent >= 100 ? 'completed' : 'in-progress'
+}
+
+export function markCompleted(id: string) {
+  const existing = loadProgressEntry(id)
+  saveProgress(id, existing?.cfi ?? '', 100, Date.now())
+}
+
+/** Forget all reading state for a book, returning it to unread. */
+export function clearProgress(id: string) {
+  localStorage.removeItem(PREFIX + id)
+}
+
+function loadProgressEntry(id: string): ReadingProgress | undefined {
+  const raw = localStorage.getItem(PREFIX + id)
+  if (raw === null) return undefined
+  try {
+    const entry = JSON.parse(raw) as {
+      cfi?: string
+      percent?: number
+      at?: number
+    }
+    return {
+      cfi: entry.cfi ?? null,
+      percent: typeof entry.percent === 'number' ? entry.percent : 0,
+      at: typeof entry.at === 'number' ? entry.at : 0,
+    }
+  } catch {
+    return undefined
+  }
+}

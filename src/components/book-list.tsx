@@ -1,30 +1,33 @@
 import { BookIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { coverUrl, type Book } from '@/lib/api'
 import { formatSize } from '@/lib/format'
-import type { ReadingProgress } from '@/lib/progress'
+import { statusOf, type ReadingProgress } from '@/lib/progress'
 
 export function BookList({
   books,
   onSelect,
   progressMap,
+  rowWrapper,
 }: {
   books: Book[]
   onSelect: (book: Book) => void
   progressMap: Map<string, ReadingProgress>
+  /** Wraps each row, e.g. in a context menu. */
+  rowWrapper?: (book: Book, row: ReactNode) => ReactNode
 }) {
   return (
     <div className="flex flex-col gap-0.5">
       {books.map((book) => {
         const cover = coverUrl(book)
-        const progress = progressMap.get(book.id)?.percent
-        const showProgress = progress !== undefined && progress > 0
-        return (
+        const progress = progressMap.get(book.id)
+        const status = statusOf(progress)
+        const row = (
           <button
-            key={book.id}
             type="button"
-            className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-left outline-none hover:bg-background/70 focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex w-full cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-left outline-none hover:bg-background/70 focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => onSelect(book)}
           >
             <div className="aspect-[2/3] w-9 shrink-0 overflow-hidden rounded-sm border bg-muted">
@@ -57,9 +60,14 @@ export function BookList({
             <span className="hidden w-12 text-sm text-muted-foreground lg:block">
               {book.year ?? ''}
             </span>
-            {showProgress && (
+            {status === 'in-progress' && progress && (
               <span className="w-10 text-xs text-primary">
-                {progress}%
+                {progress.percent}%
+              </span>
+            )}
+            {status === 'completed' && (
+              <span className="w-16 text-xs text-muted-foreground">
+                Completed
               </span>
             )}
             <Badge variant="secondary" className="uppercase">
@@ -69,6 +77,11 @@ export function BookList({
               {formatSize(book.fileSize)}
             </span>
           </button>
+        )
+        return (
+          <div key={book.id}>
+            {rowWrapper ? rowWrapper(book, row) : row}
+          </div>
         )
       })}
     </div>

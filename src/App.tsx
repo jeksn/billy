@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import {
   BookIcon,
   FilePlus2Icon,
@@ -10,8 +11,10 @@ import {
 import { cn } from 'cn'
 
 import { BookCard } from '@/components/book-card'
+import { BookContextMenu } from '@/components/book-context-menu'
 import { BookDetailsSheet } from '@/components/book-details-sheet'
 import { BookList } from '@/components/book-list'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { LibrarySetup } from '@/components/library-setup'
 import { ReaderView } from '@/components/reader-view'
 import { SettingsSheet } from '@/components/settings-sheet'
@@ -46,6 +49,7 @@ import {
   importFiles,
   importFolder,
   importFromCalibre,
+  openBook,
   pickBookFiles,
   pickFolder,
   setLibrary,
@@ -55,8 +59,11 @@ import {
   type ImportEvent,
 } from '@/lib/api'
 import {
+  clearProgress,
   isInProgress,
   loadAllProgress,
+  markCompleted,
+  statusOf,
   type ReadingProgress,
 } from '@/lib/progress'
 
@@ -85,6 +92,7 @@ export default function App() {
   const [progressMap, setProgressMap] = useState<
     Map<string, ReadingProgress>
   >(new Map())
+  const [pendingDelete, setPendingDelete] = useState<Book | null>(null)
 
   const refreshProgress = useCallback(() => {
     setProgressMap(loadAllProgress())
@@ -246,9 +254,15 @@ export default function App() {
       ) {
         return false
       }
+      if (
+        filters.statuses.length > 0 &&
+        !filters.statuses.includes(statusOf(progressMap.get(book.id)))
+      ) {
+        return false
+      }
       return true
     })
-  }, [sortedBooks, filters])
+  }, [sortedBooks, filters, progressMap])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -317,6 +331,44 @@ export default function App() {
     }
   }
 
+  const handleMarkComplete = (book: Book) => {
+    markCompleted(book.id)
+    refreshProgress()
+    toast.success(`Marked "${book.title}" as completed`)
+  }
+
+  const handleMarkUnread = (book: Book) => {
+    clearProgress(book.id)
+    refreshProgress()
+    toast.success(`Marked "${book.title}" as unread`)
+  }
+
+  const handleReveal = (book: Book) => {
+    revealItemInDir(book.path).catch((error) => toast.error(String(error)))
+  }
+
+  const readOrOpen = (book: Book) => {
+    if (book.format === 'epub') {
+      setReadingBook(book)
+    } else {
+      openBook(book.path).catch((error) => toast.error(String(error)))
+    }
+  }
+
+  const renderContextMenu = (book: Book, children: React.ReactNode) => (
+    <BookContextMenu
+      book={book}
+      progress={progressMap.get(book.id)}
+      onRead={readOrOpen}
+      onMarkComplete={handleMarkComplete}
+      onMarkUnread={handleMarkUnread}
+      onReveal={handleReveal}
+      onDelete={setPendingDelete}
+    >
+      {children}
+    </BookContextMenu>
+  )
+
   return (
     <div className="flex min-h-svh flex-col">
       <header
@@ -382,16 +434,17 @@ export default function App() {
         {currentlyReading.length > 0 && !hasActiveFilters(filters) && (
           <section className="mb-6 flex flex-col gap-3">
             <h2 className="text-sm font-medium">Continue reading</h2>
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {currentlyReading.map((book) => (
-                <div key={book.id} className="w-32 shrink-0">
+            <div className={cn('grid gap-4', GRID_SIZES[gridSize])}>
+              {currentlyReading.map((book) =>
+                renderContextMenu(
+                  book,
                   <BookCard
                     book={book}
-                    progress={progressMap.get(book.id)?.percent}
+                    progress={progressMap.get(book.id)}
                     onSelect={() => setReadingBook(book)}
-                  />
-                </div>
-              ))}
+                  />,
+                ),
+              )}
             </div>
           </section>
         )}
@@ -430,17 +483,21 @@ export default function App() {
             books={filtered}
             onSelect={setSelectedBook}
             progressMap={progressMap}
+            rowWrapper={renderContextMenu}
           />
         ) : (
           <div className={cn('grid gap-4', GRID_SIZES[gridSize])}>
-            {filtered.map((book) => (
-              <BookCard
-                key={book.id}
-                book={book}
-                progress={progressMap.get(book.id)?.percent}
-                onSelect={() => setSelectedBook(book)}
-              />
-            ))}
+            {filtered.map((book) =>
+              renderContextMenu(
+                book,
+                <BookCard
+                  key={book.id}
+                  book={book}
+                  progress={progressMap.get(book.id)}
+                  onSelect={() => setSelectedBook(book)}
+                />,
+              ),
+            )}
           </div>
         )}
       </main>
@@ -500,6 +557,15 @@ export default function App() {
           }}
         />
       )}
+
+      <ConfirmDeleteDialog
+        book={pendingDelete}
+        onConfirm={(book) => {
+          setPendingDelete(null)
+          void handleDelete(book)
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

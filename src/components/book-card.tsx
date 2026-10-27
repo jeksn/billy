@@ -1,7 +1,8 @@
-import { BookIcon } from 'lucide-react'
+import { BookIcon, CircleCheckIcon } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { coverUrl, type Book } from '@/lib/api'
+import { statusOf, type ReadingProgress } from '@/lib/progress'
 
 export function BookCard({
   book,
@@ -10,11 +11,11 @@ export function BookCard({
 }: {
   book: Book
   onSelect: () => void
-  /** Reading progress in percent, if the book has been started. */
-  progress?: number | null
+  /** Reading progress, if the book has been started or completed. */
+  progress?: ReadingProgress
 }) {
   const cover = coverUrl(book)
-  const showProgress = typeof progress === 'number' && progress > 0
+  const status = statusOf(progress)
 
   return (
     <button
@@ -38,13 +39,16 @@ export function BookCard({
         <Badge className="absolute right-1.5 bottom-1.5 uppercase">
           {book.format}
         </Badge>
-        {showProgress && (
+        {status === 'in-progress' && (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-black/20">
             <div
               className="h-full bg-primary"
-              style={{ width: `${Math.min(100, progress!)}%` }}
+              style={{ width: `${Math.min(100, progress!.percent)}%` }}
             />
           </div>
+        )}
+        {status === 'completed' && (
+          <CircleCheckIcon className="absolute top-1.5 right-1.5 size-5 rounded-full bg-background/80 text-primary" />
         )}
       </div>
       <div className="flex flex-col">
@@ -56,7 +60,9 @@ export function BookCard({
           title={book.author ?? undefined}
         >
           <span className="truncate">{book.author ?? 'Unknown author'}</span>
-          {showProgress && <span className="shrink-0">{progress}%</span>}
+          {status === 'in-progress' && (
+            <span className="shrink-0">{progress!.percent}%</span>
+          )}
         </span>
       </div>
     </button>

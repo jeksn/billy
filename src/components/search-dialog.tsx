@@ -24,6 +24,7 @@ export interface Filters {
   authors: string[]
   formats: string[]
   years: string[]
+  statuses: string[]
 }
 
 export const EMPTY_FILTERS: Filters = {
@@ -31,6 +32,7 @@ export const EMPTY_FILTERS: Filters = {
   authors: [],
   formats: [],
   years: [],
+  statuses: [],
 }
 
 export function hasActiveFilters(filters: Filters): boolean {
@@ -38,7 +40,8 @@ export function hasActiveFilters(filters: Filters): boolean {
     filters.query.trim() !== '' ||
     filters.authors.length > 0 ||
     filters.formats.length > 0 ||
-    filters.years.length > 0
+    filters.years.length > 0 ||
+    filters.statuses.length > 0
   )
 }
 
@@ -126,6 +129,27 @@ export function SearchDialog({
           >
             <ToggleGroupItem value="epub">EPUB</ToggleGroupItem>
             <ToggleGroupItem value="pdf">PDF</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+
+        <Separator />
+
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-muted-foreground">
+            Status
+          </span>
+          <ToggleGroup
+            variant="outline"
+            size="sm"
+            multiple
+            value={filters.statuses}
+            onValueChange={(statuses) =>
+              onFiltersChange({ ...filters, statuses })
+            }
+          >
+            <ToggleGroupItem value="unread">Unread</ToggleGroupItem>
+            <ToggleGroupItem value="in-progress">In progress</ToggleGroupItem>
+            <ToggleGroupItem value="completed">Completed</ToggleGroupItem>
           </ToggleGroup>
         </div>
 

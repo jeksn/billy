@@ -9,16 +9,6 @@ import {
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -41,6 +31,7 @@ import {
 } from '@/components/ui/sheet'
 import { coverUrl, openBook, type Book } from '@/lib/api'
 import { formatSize } from '@/lib/format'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 
 export function BookDetailsSheet({
   book,
@@ -280,26 +271,11 @@ export function BookDetailsSheet({
             </DialogContent>
           </Dialog>
 
-          <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete this book?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  "{book.title}" will be removed from the library and its
-                  files deleted from disk. This cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-white hover:bg-destructive/90"
-                  onClick={() => void onDelete(book)}
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ConfirmDeleteDialog
+            book={deleteOpen ? book : null}
+            onConfirm={(target) => void onDelete(target)}
+            onCancel={() => setDeleteOpen(false)}
+          />
         </SheetContent>
       )}
     </Sheet>
