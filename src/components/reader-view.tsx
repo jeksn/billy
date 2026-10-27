@@ -13,8 +13,8 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { cn } from 'cn'
-import { readBook, type Book } from '@/lib/api'
 import { usePersistentState } from '@/hooks/use-persistent-state'
+import { readBook, type Book } from '@/lib/api'
 
 interface TocItem {
   label: string
@@ -25,7 +25,10 @@ interface TocItem {
 interface RelocateDetail {
   fraction?: number
   cfi?: string
-  tocItem?: { label: string; href: string }
+}
+
+interface FoliateRenderer extends HTMLElement {
+  setStyles?: (css: string) => void
 }
 
 interface FoliateView extends HTMLElement {
@@ -35,12 +38,11 @@ interface FoliateView extends HTMLElement {
   next(): Promise<void>
   goLeft(): Promise<void>
   goRight(): Promise<void>
-  renderer: {
-    setStyles?: (css: string) => void
-    setAttribute: (name: string, value: string) => void
-  }
+  renderer: FoliateRenderer
   book: { toc?: TocItem[] }
 }
+
+const IS_MAC = /Mac/i.test(navigator.userAgent)
 
 function progressKey(id: string) {
   return `billy.progress.${id}`
@@ -131,10 +133,6 @@ export function ReaderView({
 
     container.appendChild(view)
 
-    const applyFontSize = () => {
-      view.renderer?.setStyles?.(`html { font-size: ${fontSize}% }`)
-    }
-
     const open = async () => {
       try {
         const bytes = await readBook(book.path)
@@ -147,8 +145,12 @@ export function ReaderView({
           view.remove()
           return
         }
+        const renderer = view.renderer
+        // Book-like margins and a readable text column.
+        renderer?.setAttribute?.('margin', '64px')
+        renderer?.setAttribute?.('max-inline-size', '720px')
+        renderer?.setStyles?.(`html { font-size: ${fontSize}% }`)
         setToc(view.book.toc ?? [])
-        applyFontSize()
         const cfi = loadProgress(book.id)
         await view.goTo(cfi ?? 0)
         setStatus('ready')
@@ -195,8 +197,17 @@ export function ReaderView({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      <header className="flex items-center gap-2 border-b px-4 py-2">
+    <div className="fixed inset-0 z-50 bg-background">
+      {/* Book content fills the entire window; chrome floats on top. */}
+      <div ref={containerRef} className="absolute inset-0" />
+
+      <header
+        className={cn(
+          'absolute inset-x-0 top-0 z-20 flex items-center gap-2 px-4 py-2',
+          'bg-background/70 backdrop-blur',
+          IS_MAC && 'pl-20',
+        )}
+      >
         <Button variant="ghost" size="icon-sm" onClick={onClose}>
           <ArrowLeftIcon />
           <span className="sr-only">Back to library</span>
@@ -239,59 +250,54 @@ export function ReaderView({
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
-        {tocOpen && (
-          <nav className="w-64 shrink-0 overflow-y-auto border-r p-2">
-            <TocList
-              items={toc}
-              onNavigate={(href) => {
-                void viewRef.current?.goTo(href)
-              }}
-            />
-          </nav>
-        )}
+      {tocOpen && (
+        <nav className="absolute top-11 bottom-0 left-0 z-20 w-64 overflow-y-auto border-r bg-background/90 p-2 backdrop-blur">
+          <TocList
+            items={toc}
+            onNavigate={(href) => {
+              void viewRef.current?.goTo(href)
+            }}
+          />
+        </nav>
+      )}
 
-        <main className="relative min-w-0 flex-1">
-          {status === 'loading' && (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-              Opening book...
-            </div>
-          )}
-          {status === 'error' && (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-              Could not open this book.
-            </div>
-          )}
-          <div ref={containerRef} className="size-full" />
+      {status === 'loading' && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-muted-foreground">
+          Opening book...
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-muted-foreground">
+          Could not open this book.
+        </div>
+      )}
 
-          {status === 'ready' && (
-            <>
-              <button
-                type="button"
-                aria-label="Previous page"
-                className={cn(
-                  'absolute inset-y-0 left-0 z-10 w-16 cursor-pointer',
-                  'flex items-center justify-start pl-2 opacity-30 transition-opacity hover:opacity-100',
-                )}
-                onClick={() => void viewRef.current?.goLeft()}
-              >
-                <ChevronLeftIcon className="size-8" />
-              </button>
-              <button
-                type="button"
-                aria-label="Next page"
-                className={cn(
-                  'absolute inset-y-0 right-0 z-10 w-16 cursor-pointer',
-                  'flex items-center justify-end pr-2 opacity-30 transition-opacity hover:opacity-100',
-                )}
-                onClick={() => void viewRef.current?.goRight()}
-              >
-                <ChevronRightIcon className="size-8" />
-              </button>
-            </>
-          )}
-        </main>
-      </div>
+      {status === 'ready' && (
+        <>
+          <button
+            type="button"
+            aria-label="Previous page"
+            className={cn(
+              'absolute inset-y-0 left-0 z-10 flex w-16 cursor-pointer items-center justify-start pl-2',
+              'opacity-30 transition-opacity hover:opacity-100',
+            )}
+            onClick={() => void viewRef.current?.goLeft()}
+          >
+            <ChevronLeftIcon className="size-8" />
+          </button>
+          <button
+            type="button"
+            aria-label="Next page"
+            className={cn(
+              'absolute inset-y-0 right-0 z-10 flex w-16 cursor-pointer items-center justify-end pr-2',
+              'opacity-30 transition-opacity hover:opacity-100',
+            )}
+            onClick={() => void viewRef.current?.goRight()}
+          >
+            <ChevronRightIcon className="size-8" />
+          </button>
+        </>
+      )}
     </div>
   )
 }
