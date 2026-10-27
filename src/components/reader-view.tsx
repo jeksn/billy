@@ -114,6 +114,8 @@ export function ReaderView({
     if (!container) return
 
     const view = document.createElement('foliate-view') as FoliateView
+    // Custom elements are display:inline by default, where height is ignored.
+    view.style.display = 'block'
     view.style.height = '100%'
     viewRef.current = view
 
