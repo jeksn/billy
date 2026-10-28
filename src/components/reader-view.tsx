@@ -61,7 +61,7 @@ const THEME_LABEL: Record<ReaderTheme, string> = {
 const THEME_CSS: Record<ReaderTheme, string> = {
   default: '',
   paper: 'background: #f3ead8; color: #43331c; color-scheme: light;',
-  dark: 'background: #17181c; color: #d6d6da; color-scheme: dark;',
+  dark: 'background: #000; color: #d6d6da; color-scheme: dark;',
 }
 
 function contentCss(fontSize: number, theme: ReaderTheme) {
