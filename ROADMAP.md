@@ -37,10 +37,12 @@ features. Check items off as they ship.
 - [x] Replace the details-sheet "Open" button with the in-app reader (EPUB
       opens in-app as "Read"; PDF still hands off to the system until PDF
       rendering exists)
-- [ ] PDF cover rendering from page 1 (needs a PDF rasterizer; pdfium-rs or
-      mupdf — native dependency decision required)
-- [ ] Reader polish candidates: scrolled mode toggle, theme override (paper /
-      dark), bookmarks, search within book
+- [x] PDF cover rendering from page 1 (pdf.js in the webview, saved via a
+      `save_cover` command — no native PDF dependency; auto-backfills PDFs
+      without covers)
+- [x] Reader polish: scrolled mode toggle, reading theme (default/paper/dark
+      with matching chrome)
+- [ ] Reader polish left: bookmarks, search within book
 
 ## Phase 3 — Send to e-reader
 

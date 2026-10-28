@@ -3,9 +3,12 @@ import {
   ArrowLeftIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  Columns2Icon,
   ListIcon,
   MinusIcon,
+  PaletteIcon,
   PlusIcon,
+  Rows3Icon,
   XIcon,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -44,6 +47,26 @@ interface FoliateView extends HTMLElement {
 }
 
 const IS_MAC = /Mac/i.test(navigator.userAgent)
+
+type ReaderFlow = 'paginated' | 'scrolled'
+type ReaderTheme = 'default' | 'paper' | 'dark'
+
+const THEME_CYCLE: ReaderTheme[] = ['default', 'paper', 'dark']
+const THEME_LABEL: Record<ReaderTheme, string> = {
+  default: 'Default',
+  paper: 'Paper',
+  dark: 'Dark',
+}
+
+const THEME_CSS: Record<ReaderTheme, string> = {
+  default: '',
+  paper: 'background: #f3ead8; color: #43331c; color-scheme: light;',
+  dark: 'background: #17181c; color: #d6d6da; color-scheme: dark;',
+}
+
+function contentCss(fontSize: number, theme: ReaderTheme) {
+  return `html { font-size: ${fontSize}%; ${THEME_CSS[theme]} }`
+}
 
 
 function TocList({
@@ -95,6 +118,14 @@ export function ReaderView({
     'billy.reader.fontSize',
     100,
   )
+  const [flow, setFlow] = usePersistentState<ReaderFlow>(
+    'billy.reader.flow',
+    'paginated',
+  )
+  const [theme, setTheme] = usePersistentState<ReaderTheme>(
+    'billy.reader.theme',
+    'default',
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -137,7 +168,8 @@ export function ReaderView({
         // Book-like margins and a readable text column.
         renderer?.setAttribute?.('margin', '64px')
         renderer?.setAttribute?.('max-inline-size', '720px')
-        renderer?.setStyles?.(`html { font-size: ${fontSize}% }`)
+        renderer?.setAttribute?.('flow', flow)
+        renderer?.setStyles?.(contentCss(fontSize, theme))
         setToc(view.book.toc ?? [])
         await view.goTo(resumeCfi ?? 0)
         setStatus('ready')
@@ -160,8 +192,12 @@ export function ReaderView({
 
   useEffect(() => {
     if (status !== 'ready') return
-    viewRef.current?.renderer?.setStyles?.(`html { font-size: ${fontSize}% }`)
-  }, [fontSize, status])
+    viewRef.current?.renderer?.setStyles?.(contentCss(fontSize, theme))
+  }, [fontSize, theme, status])
+
+  useEffect(() => {
+    viewRef.current?.renderer?.setAttribute?.('flow', flow)
+  }, [flow, status])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -184,7 +220,12 @@ export function ReaderView({
   }
 
   return (
-    <div className="reader-surface fixed inset-0 z-50 bg-background">
+    <div
+      className={cn(
+        'reader-surface fixed inset-0 z-50 bg-background',
+        theme === 'dark' && 'reader-surface-dark',
+      )}
+    >
       {/* Book content fills the entire window; chrome floats on top. */}
       <div ref={containerRef} className="absolute inset-0" />
 
@@ -222,6 +263,35 @@ export function ReaderView({
           >
             <PlusIcon />
             <span className="sr-only">Increase font size</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() =>
+              setFlow((current) =>
+                current === 'paginated' ? 'scrolled' : 'paginated',
+              )
+            }
+          >
+            {flow === 'scrolled' ? <Rows3Icon /> : <Columns2Icon />}
+            <span className="sr-only">Toggle scrolled mode</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() =>
+              setTheme(
+                (current) =>
+                  THEME_CYCLE[
+                    (THEME_CYCLE.indexOf(current) + 1) % THEME_CYCLE.length
+                  ],
+              )
+            }
+          >
+            <PaletteIcon />
+            <span className="sr-only">
+              Reading theme: {THEME_LABEL[theme]}
+            </span>
           </Button>
           <Button
             variant="ghost"
