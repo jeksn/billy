@@ -91,7 +91,6 @@ export function ReaderView({
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [toc, setToc] = useState<TocItem[]>([])
   const [tocOpen, setTocOpen] = useState(false)
-  const [percent, setPercent] = useState<number | null>(null)
   const [fontSize, setFontSize] = usePersistentState<number>(
     'billy.reader.fontSize',
     100,
@@ -110,9 +109,6 @@ export function ReaderView({
 
     view.addEventListener('relocate', (event) => {
       const detail = (event as CustomEvent<RelocateDetail>).detail
-      if (detail.fraction !== undefined) {
-        setPercent(Math.round(detail.fraction * 100))
-      }
       if (detail.cfi) {
         void saveProgress(
           book.id,
@@ -206,11 +202,11 @@ export function ReaderView({
         <span className="truncate text-sm font-medium" title={book.title}>
           {book.title}
         </span>
-        <span className="text-xs text-muted-foreground">
-          {percent !== null ? `${percent}%` : ''}
-        </span>
 
         <div className="ml-auto flex items-center gap-1">
+          <span className="text-xs text-muted-foreground" aria-hidden="true">
+            Aa
+          </span>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -219,9 +215,6 @@ export function ReaderView({
             <MinusIcon />
             <span className="sr-only">Decrease font size</span>
           </Button>
-          <span className="w-10 text-center text-xs text-muted-foreground">
-            {fontSize}%
-          </span>
           <Button
             variant="ghost"
             size="icon-sm"
