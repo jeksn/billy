@@ -67,7 +67,7 @@ export function BookList({
             )}
             {status === 'completed' && (
               <span className="w-16 text-xs text-muted-foreground">
-                Completed
+                Read
               </span>
             )}
             <Badge variant="secondary" className="uppercase">

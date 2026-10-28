@@ -13,17 +13,13 @@
   <!-- rounded-square app background -->
   <rect width="256" height="256" rx="58" fill="url(#bg)"/>
 
-  <!-- the B as one blob: stem (book spine) + body -->
-  <rect x="72" y="44" width="28" height="168" rx="14" fill="url(#paper)"/>
-  <rect x="72" y="44" width="98" height="168" rx="44" fill="url(#paper)"/>
-
-  <!-- the counters, punched through with the background -->
-  <rect x="108" y="64" width="42" height="38" rx="19" fill="url(#bg)"/>
-  <rect x="108" y="118" width="50" height="74" rx="22" fill="url(#bg)"/>
+  <!-- the mark: one solid blob, circle + spine stem -->
+  <circle cx="128" cy="128" r="80" fill="url(#paper)"/>
+  <rect x="64" y="36" width="28" height="184" rx="14" fill="url(#paper)"/>
 
   <!-- raised bands, like a hardcover spine -->
   <g fill="#1a2340" opacity="0.12">
-    <rect x="72" y="70" width="28" height="6" rx="3"/>
-    <rect x="72" y="180" width="28" height="6" rx="3"/>
+    <rect x="64" y="62" width="28" height="6" rx="3"/>
+    <rect x="64" y="188" width="28" height="6" rx="3"/>
   </g>
 </svg>

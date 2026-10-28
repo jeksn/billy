@@ -49,7 +49,7 @@ export function BookContextMenu({
         {status === 'in-progress' && (
           <ContextMenuItem onClick={() => onMarkComplete(book)}>
             <CircleCheckIcon data-icon="inline-start" />
-            Mark as completed
+            Mark as read
           </ContextMenuItem>
         )}
         {status !== 'unread' && (

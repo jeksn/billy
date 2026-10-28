@@ -562,6 +562,9 @@ export default function App() {
 
       <BookDetailsSheet
         book={selectedBook}
+        progress={
+          selectedBook ? progressMap.get(selectedBook.id) : undefined
+        }
         onClose={() => setSelectedBook(null)}
         onDelete={handleDelete}
         onMetadataSave={handleMetadataSave}
@@ -569,6 +572,8 @@ export default function App() {
           setSelectedBook(null)
           setReadingBook(book)
         }}
+        onMarkRead={handleMarkComplete}
+        onMarkUnread={handleMarkUnread}
       />
 
       {readingBook && (

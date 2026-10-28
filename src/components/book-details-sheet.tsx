@@ -2,6 +2,7 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import {
   BookIcon,
   BookOpenIcon,
+  CircleCheckIcon,
   FolderSearchIcon,
   PencilIcon,
   Trash2Icon,
@@ -31,16 +32,21 @@ import {
 } from '@/components/ui/sheet'
 import { coverUrl, openBook, type Book } from '@/lib/api'
 import { formatSize } from '@/lib/format'
+import { statusOf, type ReadingProgress } from '@/lib/progress'
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 
 export function BookDetailsSheet({
   book,
+  progress,
   onClose,
   onDelete,
   onMetadataSave,
   onRead,
+  onMarkRead,
+  onMarkUnread,
 }: {
   book: Book | null
+  progress?: ReadingProgress
   onClose: () => void
   onDelete: (book: Book) => Promise<void>
   onMetadataSave: (
@@ -50,6 +56,8 @@ export function BookDetailsSheet({
     year: number | null,
   ) => Promise<Book>
   onRead: (book: Book) => void
+  onMarkRead: (book: Book) => void
+  onMarkUnread: (book: Book) => void
 }) {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -69,6 +77,7 @@ export function BookDetailsSheet({
   }, [book])
 
   const cover = book ? coverUrl(book) : null
+  const readState = statusOf(progress)
 
   const saveMetadata = async () => {
     if (!book || !title.trim()) return
@@ -171,6 +180,20 @@ export function BookDetailsSheet({
                   variant="outline"
                   className="flex-1"
                   onClick={() => {
+                    if (readState === 'completed') {
+                      onMarkUnread(book)
+                    } else {
+                      onMarkRead(book)
+                    }
+                  }}
+                >
+                  <CircleCheckIcon data-icon="inline-start" />
+                  {readState === 'completed' ? 'Mark as unread' : 'Mark as read'}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
                     revealItemInDir(book.path).catch((error) =>
                       toast.error(String(error)),
                     )
@@ -179,15 +202,15 @@ export function BookDetailsSheet({
                   <FolderSearchIcon data-icon="inline-start" />
                   Show in folder
                 </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => setDeleteOpen(true)}
-                >
-                  <Trash2Icon data-icon="inline-start" />
-                  Delete
-                </Button>
               </div>
+              <Button
+                variant="outline"
+                className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2Icon data-icon="inline-start" />
+                Delete
+              </Button>
             </div>
           </div>
 
