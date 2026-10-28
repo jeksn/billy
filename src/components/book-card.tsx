@@ -40,12 +40,9 @@ export function BookCard({
           {book.format}
         </Badge>
         {status === 'in-progress' && (
-          <div className="absolute inset-x-0 bottom-0 h-1 bg-black/20">
-            <div
-              className="h-full bg-primary"
-              style={{ width: `${Math.min(100, progress!.percent)}%` }}
-            />
-          </div>
+          <Badge variant="secondary" className="absolute bottom-1.5 left-1.5">
+            {progress!.percent}%
+          </Badge>
         )}
         {status === 'completed' && (
           <CircleCheckIcon className="absolute top-1.5 right-1.5 size-5 rounded-full bg-background/80 text-primary" />
@@ -56,13 +53,10 @@ export function BookCard({
           {book.title}
         </span>
         <span
-          className="flex items-baseline gap-1 truncate text-xs text-muted-foreground"
+          className="truncate text-xs text-muted-foreground"
           title={book.author ?? undefined}
         >
-          <span className="truncate">{book.author ?? 'Unknown author'}</span>
-          {status === 'in-progress' && (
-            <span className="shrink-0">{progress!.percent}%</span>
-          )}
+          {book.author ?? 'Unknown author'}
         </span>
       </div>
     </button>
