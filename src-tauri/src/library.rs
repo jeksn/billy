@@ -128,6 +128,27 @@ impl Library {
         db::delete_progress(&self.conn, book_id)
     }
 
+    /// Write a rendered cover image into the book's folder and point the
+    /// database row at it. Any previous cover file is removed.
+    pub fn save_cover(&self, book_id: &str, bytes: &[u8]) -> Result<(), AppError> {
+        let row = db::get_book(&self.conn, book_id)?
+            .ok_or_else(|| AppError::msg("book not found"))?;
+        let dir_rel = row
+            .file_path
+            .rsplit_once('/')
+            .map(|(dir, _)| dir.to_string())
+            .ok_or_else(|| AppError::msg("book file path has no folder"))?;
+        let rel = format!("{dir_rel}/cover.png");
+        if let Some(old) = row.cover_path.as_deref() {
+            if old != rel {
+                let _ = fs::remove_file(self.root.join(old));
+            }
+        }
+        fs::write(self.root.join(&rel), bytes)?;
+        db::update_book_paths(&self.conn, book_id, &row.file_path, Some(&rel))?;
+        Ok(())
+    }
+
     /// Update title/author/year, moving the book's folder and file to match
     /// the new metadata.
     pub fn update_metadata(

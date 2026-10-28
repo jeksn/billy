@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import {
@@ -43,6 +43,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { usePersistentState } from '@/hooks/use-persistent-state'
+import { renderPdfCover } from '@/lib/pdf-cover'
 import {
   deleteBook,
   getBooks,
@@ -128,9 +129,41 @@ export default function App() {
     total: number
   } | null>(null)
 
+  const attemptedCoversRef = useRef(new Set<string>())
+
   const refreshBooks = useCallback(async () => {
     try {
-      setBooks(await getBooks())
+      let list = await getBooks()
+      setBooks(list)
+
+      // Generate covers for PDFs that lack one, using pdf.js in the webview.
+      const targets = list.filter(
+        (book) =>
+          book.format === 'pdf' &&
+          !book.cover &&
+          !attemptedCoversRef.current.has(book.id),
+      )
+      for (const book of targets) {
+        attemptedCoversRef.current.add(book.id)
+      }
+      let generated = 0
+      for (const book of targets) {
+        try {
+          await renderPdfCover(book)
+          generated++
+        } catch {
+          // Skip books that fail to render; they keep the placeholder cover.
+        }
+      }
+      if (generated > 0) {
+        list = await getBooks()
+        setBooks(list)
+        toast.success(
+          generated === 1
+            ? 'Generated 1 PDF cover'
+            : `Generated ${generated} PDF covers`,
+        )
+      }
     } catch (error) {
       toast.error(String(error))
     } finally {

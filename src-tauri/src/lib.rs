@@ -318,6 +318,19 @@ async fn clear_progress(app: AppHandle, book_id: String) -> Result<(), AppError>
 }
 
 #[tauri::command]
+async fn save_cover(
+    app: AppHandle,
+    book_id: String,
+    bytes: Vec<u8>,
+) -> Result<(), AppError> {
+    run_blocking(app, move |app| {
+        let state = app.state::<SharedState>();
+        state.with_library(|lib| lib.save_cover(&book_id, &bytes))
+    })
+    .await
+}
+
+#[tauri::command]
 async fn delete_book(app: AppHandle, id: String) -> Result<(), AppError> {
     run_blocking(app, move |app| {
         let state = app.state::<SharedState>();
@@ -370,7 +383,8 @@ pub fn run() {
             read_book,
             get_progress,
             save_progress,
-            clear_progress
+            clear_progress,
+            save_cover
         ])
         .run(tauri::generate_context!())
         .expect("error while running billy");
