@@ -46,7 +46,7 @@ export function BookContextMenu({
           <BookOpenIcon data-icon="inline-start" />
           {book.format === 'epub' ? 'Read...' : 'Open...'}
         </ContextMenuItem>
-        {status === 'in-progress' && (
+        {status !== 'completed' && (
           <ContextMenuItem onClick={() => onMarkComplete(book)}>
             <CircleCheckIcon data-icon="inline-start" />
             Mark as read
