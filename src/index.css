@@ -141,6 +141,15 @@
     background-color: var(--background);
 }
 
+/* Paper reading theme: tint the whole reader window to match sepia content. */
+.reader-surface-paper {
+    --background: #f3ead8;
+    --popover: #f3ead8;
+    --muted: #eadfc7;
+    color: var(--foreground);
+    background-color: var(--background);
+}
+
 /* Dark reading theme: flip the reader chrome to match dark book content. */
 .reader-surface-dark {
     --background: oklch(0.145 0 0);

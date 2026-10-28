@@ -223,6 +223,7 @@ export function ReaderView({
     <div
       className={cn(
         'reader-surface fixed inset-0 z-50 bg-background',
+        theme === 'paper' && 'reader-surface-paper',
         theme === 'dark' && 'reader-surface-dark',
       )}
     >
