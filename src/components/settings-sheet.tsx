@@ -9,6 +9,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import {
   Sheet,
   SheetContent,
@@ -49,6 +50,8 @@ export function SettingsSheet({
   onGridSizeChange,
   sortMode,
   onSortModeChange,
+  hideRead,
+  onHideReadChange,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -61,6 +64,8 @@ export function SettingsSheet({
   onGridSizeChange: (size: 'small' | 'medium' | 'large') => void
   sortMode: 'author' | 'title' | 'recent' | 'year'
   onSortModeChange: (mode: 'author' | 'title' | 'recent' | 'year') => void
+  hideRead: boolean
+  onHideReadChange: (hide: boolean) => void
 }) {
   const { theme, setTheme } = useTheme()
 
@@ -184,6 +189,13 @@ export function SettingsSheet({
             <h2 className="text-xs font-medium text-muted-foreground">
               Library
             </h2>
+            <label className="flex cursor-pointer items-center justify-between gap-2 text-sm">
+              Hide read books
+              <Switch
+                checked={hideRead}
+                onCheckedChange={(checked) => onHideReadChange(checked)}
+              />
+            </label>
             <p className="break-all text-sm" title={libraryPath ?? undefined}>
               {libraryPath ?? 'No library selected'}
             </p>

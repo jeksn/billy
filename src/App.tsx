@@ -118,6 +118,10 @@ export default function App() {
     'billy.sortMode',
     'author',
   )
+  const [hideRead, setHideRead] = usePersistentState<boolean>(
+    'billy.hideRead',
+    false,
+  )
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [importing, setImporting] = useState<{
     current: number
@@ -261,6 +265,13 @@ export default function App() {
         return false
       }
       if (
+        hideRead &&
+        filters.statuses.length === 0 &&
+        statusOf(progressMap.get(book.id)) === 'completed'
+      ) {
+        return false
+      }
+      if (
         filters.statuses.length > 0 &&
         !filters.statuses.includes(statusOf(progressMap.get(book.id)))
       ) {
@@ -268,7 +279,7 @@ export default function App() {
       }
       return true
     })
-  }, [sortedBooks, filters, progressMap])
+  }, [sortedBooks, filters, progressMap, hideRead])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -550,6 +561,8 @@ export default function App() {
         onGridSizeChange={setGridSize}
         sortMode={sortMode}
         onSortModeChange={setSortMode}
+        hideRead={hideRead}
+        onHideReadChange={setHideRead}
         onChooseLibrary={() => {
           setSettingsOpen(false)
           void chooseLibrary()
