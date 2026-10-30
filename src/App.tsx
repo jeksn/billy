@@ -55,6 +55,7 @@ import {
   pickBookFiles,
   pickFolder,
   getDevices,
+  listDeviceBooks,
   sendToDevice,
   setLibrary,
   updateBookMetadata,
@@ -100,21 +101,61 @@ export default function App() {
   >(new Map())
   const [pendingDelete, setPendingDelete] = useState<Book | null>(null)
   const [devices, setDevices] = useState<ReaderDevice[]>([])
+  const [deviceBooks, setDeviceBooks] = useState<Set<string>>(new Set())
+  const deviceSignatureRef = useRef('')
+
+  const refreshDeviceBooks = useCallback(async (found: ReaderDevice[]) => {
+    if (found.length === 0) {
+      setDeviceBooks(new Set())
+      return
+    }
+    try {
+      const lists = await Promise.all(
+        found.map((device) => listDeviceBooks(device.path)),
+      )
+      setDeviceBooks(new Set(lists.flat()))
+    } catch {
+      setDeviceBooks(new Set())
+    }
+  }, [])
 
   useEffect(() => {
     const poll = () => {
       getDevices()
-        .then(setDevices)
+        .then((found) => {
+          setDevices(found)
+          const signature = found.map((d) => d.path).join('|')
+          if (signature !== deviceSignatureRef.current) {
+            deviceSignatureRef.current = signature
+            void refreshDeviceBooks(found)
+          }
+        })
         .catch(() => {})
     }
     poll()
     const timer = window.setInterval(poll, 5000)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [refreshDeviceBooks])
+
+  const isOnDevice = useCallback(
+    (book: Book) => {
+      const base = (book.path.split('/').pop() ?? '').replace(
+        /\.(epub|pdf)$/i,
+        '',
+      )
+      return deviceBooks.has(base.trim().toLowerCase())
+    },
+    [deviceBooks],
+  )
 
   const handleSend = async (book: Book, device: ReaderDevice) => {
     try {
       await sendToDevice(book.id, device.path)
+      const base = (book.path.split('/').pop() ?? '')
+        .replace(/\.(epub|pdf)$/i, '')
+        .trim()
+        .toLowerCase()
+      setDeviceBooks((prev) => new Set(prev).add(base))
       toast.success(`Sent "${book.title}" to ${device.label}`)
     } catch (error) {
       toast.error(String(error))
@@ -522,6 +563,7 @@ export default function App() {
                   <BookCard
                     book={book}
                     progress={progressMap.get(book.id)}
+                    onDevice={isOnDevice(book)}
                     onSelect={() => setReadingBook(book)}
                   />,
                 ),
@@ -577,6 +619,7 @@ export default function App() {
             onSelect={setSelectedBook}
             progressMap={progressMap}
             rowWrapper={renderContextMenu}
+            isOnDevice={isOnDevice}
           />
         ) : (
           <div className={cn('grid gap-4', GRID_SIZES[gridSize])}>
@@ -587,6 +630,7 @@ export default function App() {
                   key={book.id}
                   book={book}
                   progress={progressMap.get(book.id)}
+                  onDevice={isOnDevice(book)}
                   onSelect={() => setSelectedBook(book)}
                 />,
               ),

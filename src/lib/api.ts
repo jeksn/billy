@@ -119,6 +119,10 @@ export async function sendToDevice(
   return invoke<string>('send_to_device', { bookId, devicePath })
 }
 
+export async function listDeviceBooks(devicePath: string): Promise<string[]> {
+  return invoke<string[]>('list_device_books', { devicePath })
+}
+
 export async function updateBookMetadata(
   id: string,
   title: string,

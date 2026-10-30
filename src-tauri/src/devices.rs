@@ -68,3 +68,49 @@ pub fn target_dir(volume: &Path, kind: &str) -> PathBuf {
 pub fn is_mounted_volume(path: &Path) -> bool {
     path.starts_with("/Volumes") && path.is_dir()
 }
+
+/// Walk a mounted e-reader volume and collect normalized base names of the
+/// ebook files on it (lowercased, extension and `.kepub` suffix stripped),
+/// so the library can mark which books are already on the device. Handles
+/// both flat files and Calibre's author-folder layout.
+pub fn list_book_names(volume: &Path) -> Result<Vec<String>, AppError> {
+    let mut out = Vec::new();
+    walk_volume(volume, &mut out);
+    Ok(out)
+}
+
+fn walk_volume(dir: &Path, out: &mut Vec<String>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = entry.file_name().to_string_lossy().into_owned();
+        // Hidden dirs (.kobo, .adobe) and macOS AppleDouble files.
+        if name.starts_with('.') || name.starts_with("._") {
+            continue
+        }
+        if path.is_dir() {
+            walk_volume(&path, out);
+            continue
+        }
+        let Some(ext) = path
+            .extension()
+            .map(|e| e.to_string_lossy().to_lowercase())
+        else {
+            continue
+        };
+        if !matches!(
+            ext.as_str(),
+            "epub" | "pdf" | "mobi" | "azw3" | "kepub" | "azw"
+        ) {
+            continue
+        }
+        let stem = path
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let stem = stem.strip_suffix(".kepub").unwrap_or(stem.as_str());
+        out.push(stem.trim().to_lowercase());
+    }
+}

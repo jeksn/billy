@@ -324,6 +324,16 @@ async fn get_devices() -> Result<Vec<devices::Device>, AppError> {
     devices::detect()
 }
 
+/// Normalized base names of the ebook files on a connected device.
+#[tauri::command]
+async fn list_device_books(device_path: String) -> Result<Vec<String>, AppError> {
+    let volume = PathBuf::from(&device_path);
+    if !devices::is_mounted_volume(&volume) {
+        return Err(AppError::msg("device is no longer connected"));
+    }
+    devices::list_book_names(&volume)
+}
+
 /// Copy a book file onto an e-reader volume.
 #[tauri::command]
 async fn send_to_device(
@@ -418,7 +428,8 @@ pub fn run() {
             clear_progress,
             save_cover,
             get_devices,
-            send_to_device
+            send_to_device,
+            list_device_books
         ])
         .run(tauri::generate_context!())
         .expect("error while running billy");

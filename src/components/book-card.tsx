@@ -1,4 +1,4 @@
-import { BookIcon, CircleCheckIcon } from 'lucide-react'
+import { BookIcon, CircleCheckIcon, TabletIcon } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { coverUrl, type Book } from '@/lib/api'
@@ -8,11 +8,14 @@ export function BookCard({
   book,
   onSelect,
   progress,
+  onDevice,
 }: {
   book: Book
   onSelect: () => void
   /** Reading progress, if the book has been started or completed. */
   progress?: ReadingProgress
+  /** Whether the book is already on a connected e-reader. */
+  onDevice?: boolean
 }) {
   const cover = coverUrl(book)
   const status = statusOf(progress)
@@ -46,6 +49,15 @@ export function BookCard({
         )}
         {status === 'completed' && (
           <CircleCheckIcon className="absolute top-1.5 right-1.5 size-5 rounded-full bg-background/80 text-primary" />
+        )}
+        {onDevice && (
+          <Badge
+            variant="secondary"
+            className="absolute top-1.5 left-1.5 gap-1"
+            title="On device"
+          >
+            <TabletIcon className="size-3" />
+          </Badge>
         )}
       </div>
       <div className="flex flex-col">

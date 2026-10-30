@@ -1,4 +1,4 @@
-import { BookIcon } from 'lucide-react'
+import { BookIcon, TabletIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -11,12 +11,14 @@ export function BookList({
   onSelect,
   progressMap,
   rowWrapper,
+  isOnDevice,
 }: {
   books: Book[]
   onSelect: (book: Book) => void
   progressMap: Map<string, ReadingProgress>
   /** Wraps each row, e.g. in a context menu. */
   rowWrapper?: (book: Book, row: ReactNode) => ReactNode
+  isOnDevice: (book: Book) => boolean
 }) {
   return (
     <div className="flex flex-col gap-0.5">
@@ -68,6 +70,15 @@ export function BookList({
             {status === 'completed' && (
               <span className="w-16 text-xs text-muted-foreground">
                 Read
+              </span>
+            )}
+            {isOnDevice(book) && (
+              <span
+                className="w-5 text-muted-foreground"
+                title="On device"
+                aria-label="On device"
+              >
+                <TabletIcon className="size-3.5" />
               </span>
             )}
             <Badge variant="secondary" className="uppercase">
