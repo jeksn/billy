@@ -115,8 +115,9 @@ export async function getDevices(): Promise<ReaderDevice[]> {
 export async function sendToDevice(
   bookId: string,
   devicePath: string,
+  kepub: boolean,
 ): Promise<string> {
-  return invoke<string>('send_to_device', { bookId, devicePath })
+  return invoke<string>('send_to_device', { bookId, devicePath, kepub })
 }
 
 export async function listDeviceBooks(devicePath: string): Promise<string[]> {

@@ -150,12 +150,14 @@ impl Library {
     }
 
     /// Copy a book file onto a mounted e-reader volume; returns the
-    /// destination path.
+    /// destination path. EPUBs sent to a Kobo can be converted to KEPUB
+    /// on the way, which enables Kobo reading stats.
     pub fn send_to_device(
         &self,
         book_id: &str,
         volume: &Path,
         kind: &str,
+        kepub: bool,
     ) -> Result<std::path::PathBuf, AppError> {
         let row = db::get_book(&self.conn, book_id)?
             .ok_or_else(|| AppError::msg("book not found"))?;
@@ -165,14 +167,23 @@ impl Library {
         }
         let target_dir = crate::devices::target_dir(volume, kind);
         fs::create_dir_all(&target_dir)?;
-        let file_name = row
+        let base = row
             .file_path
             .rsplit('/')
             .next()
             .unwrap_or("book.epub")
             .to_string();
-        let target = target_dir.join(&file_name);
-        fs::copy(&source, &target)?;
+
+        let target = if kepub && kind == "kobo" && row.format == "epub" {
+            let stem = base.strip_suffix(".epub").unwrap_or(&base);
+            let target = target_dir.join(format!("{stem}.kepub.epub"));
+            crate::kepub::convert_epub(&source, &target)?;
+            target
+        } else {
+            let target = target_dir.join(&base);
+            fs::copy(&source, &target)?;
+            target
+        };
         Ok(target)
     }
 

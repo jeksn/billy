@@ -46,12 +46,16 @@ features. Check items off as they ship.
 
 ## Phase 3 — Send to e-reader
 
-- [ ] Detect connected e-readers (see research below)
-- [ ] Copy selected book(s) to device storage
-- [ ] Per-device target paths and format notes (Kobo: epub anywhere; Kindle:
-      azw3/mobi via USB, epub only via Send-to-Kindle)
-- [ ] Optional: remember which books are on which device (Calibre's
-      "On Device" column)
+- [x] Detect connected e-readers (volume scan with per-family markers)
+- [x] Copy selected book to device via context menu ("Send to Kobo")
+- [x] On-device highlighting (scan + fuzzy title match, handles Calibre's
+      title-sorted on-device names)
+- [x] KEPUB conversion for Kobos (Rust kepubifier: Kobo spans injected into
+      content documents, `.kepub.epub` output; toggle in settings)
+- [ ] Safe eject from within billy
+- [ ] "On device" tracking persisted in billy.db (currently re-scanned)
+- [ ] MTP support via `mtp-rs` for USB-C Kindles
+- [ ] Kindle format conversion (AZW3/MOBI — big, separate item)
 
 ---
 

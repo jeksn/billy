@@ -52,6 +52,8 @@ export function SettingsSheet({
   onSortModeChange,
   hideRead,
   onHideReadChange,
+  sendKepub,
+  onSendKepubChange,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -66,6 +68,8 @@ export function SettingsSheet({
   onSortModeChange: (mode: 'author' | 'title' | 'recent' | 'year') => void
   hideRead: boolean
   onHideReadChange: (hide: boolean) => void
+  sendKepub: boolean
+  onSendKepubChange: (kepub: boolean) => void
 }) {
   const { theme, setTheme } = useTheme()
 
@@ -203,6 +207,26 @@ export function SettingsSheet({
               <FolderOpenIcon data-icon="inline-start" />
               Change library folder...
             </Button>
+          </section>
+
+          <Separator />
+
+          <section className="flex flex-col gap-2">
+            <h2 className="text-xs font-medium text-muted-foreground">
+              Devices
+            </h2>
+            <label className="flex cursor-pointer items-center justify-between gap-2 text-sm">
+              <span className="flex flex-col">
+                Convert to KEPUB for Kobos
+                <span className="text-xs font-normal text-muted-foreground">
+                  Enables reading stats and faster pages on the device
+                </span>
+              </span>
+              <Switch
+                checked={sendKepub}
+                onCheckedChange={(checked) => onSendKepubChange(checked)}
+              />
+            </label>
           </section>
 
           <Separator />

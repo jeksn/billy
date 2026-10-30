@@ -4,6 +4,7 @@ mod db;
 mod devices;
 mod error;
 mod formats;
+mod kepub;
 mod library;
 
 use std::path::PathBuf;
@@ -340,6 +341,7 @@ async fn send_to_device(
     app: AppHandle,
     book_id: String,
     device_path: String,
+    kepub: bool,
 ) -> Result<String, AppError> {
     run_blocking(app, move |app| {
         let volume = PathBuf::from(&device_path);
@@ -352,7 +354,7 @@ async fn send_to_device(
                 .into_iter()
                 .find(|d| d.path == device_path)
                 .ok_or_else(|| AppError::msg("device is no longer recognized"))?;
-            let target = lib.send_to_device(&book_id, &volume, &device.kind)?;
+            let target = lib.send_to_device(&book_id, &volume, &device.kind, kepub)?;
             Ok(target.to_string_lossy().into_owned())
         })
     })
