@@ -149,6 +149,33 @@ impl Library {
         Ok(())
     }
 
+    /// Copy a book file onto a mounted e-reader volume; returns the
+    /// destination path.
+    pub fn send_to_device(
+        &self,
+        book_id: &str,
+        volume: &Path,
+        kind: &str,
+    ) -> Result<std::path::PathBuf, AppError> {
+        let row = db::get_book(&self.conn, book_id)?
+            .ok_or_else(|| AppError::msg("book not found"))?;
+        let source = self.root.join(&row.file_path);
+        if !source.exists() {
+            return Err(AppError::msg("book file is missing from the library"));
+        }
+        let target_dir = crate::devices::target_dir(volume, kind);
+        fs::create_dir_all(&target_dir)?;
+        let file_name = row
+            .file_path
+            .rsplit('/')
+            .next()
+            .unwrap_or("book.epub")
+            .to_string();
+        let target = target_dir.join(&file_name);
+        fs::copy(&source, &target)?;
+        Ok(target)
+    }
+
     /// Update title/author/year, moving the book's folder and file to match
     /// the new metadata.
     pub fn update_metadata(

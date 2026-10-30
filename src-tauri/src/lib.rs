@@ -1,6 +1,7 @@
 mod calibre;
 mod config;
 mod db;
+mod devices;
 mod error;
 mod formats;
 mod library;
@@ -318,6 +319,37 @@ async fn clear_progress(app: AppHandle, book_id: String) -> Result<(), AppError>
 }
 
 #[tauri::command]
+async fn get_devices() -> Result<Vec<devices::Device>, AppError> {
+    // A single directory listing; no need for the blocking pool.
+    devices::detect()
+}
+
+/// Copy a book file onto an e-reader volume.
+#[tauri::command]
+async fn send_to_device(
+    app: AppHandle,
+    book_id: String,
+    device_path: String,
+) -> Result<String, AppError> {
+    run_blocking(app, move |app| {
+        let volume = PathBuf::from(&device_path);
+        if !devices::is_mounted_volume(&volume) {
+            return Err(AppError::msg("that device is no longer connected"));
+        }
+        let state = app.state::<SharedState>();
+        state.with_library(|lib| {
+            let device = devices::detect()?
+                .into_iter()
+                .find(|d| d.path == device_path)
+                .ok_or_else(|| AppError::msg("device is no longer recognized"))?;
+            let target = lib.send_to_device(&book_id, &volume, &device.kind)?;
+            Ok(target.to_string_lossy().into_owned())
+        })
+    })
+    .await
+}
+
+#[tauri::command]
 async fn save_cover(
     app: AppHandle,
     book_id: String,
@@ -384,7 +416,9 @@ pub fn run() {
             get_progress,
             save_progress,
             clear_progress,
-            save_cover
+            save_cover,
+            get_devices,
+            send_to_device
         ])
         .run(tauri::generate_context!())
         .expect("error while running billy");

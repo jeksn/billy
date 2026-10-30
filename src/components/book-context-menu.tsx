@@ -3,6 +3,7 @@ import {
   BookOpenIcon,
   CircleCheckIcon,
   FolderSearchIcon,
+  SendIcon,
   Trash2Icon,
 } from 'lucide-react'
 
@@ -13,27 +14,31 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
-import type { Book } from '@/lib/api'
+import type { Book, ReaderDevice } from '@/lib/api'
 import { statusOf, type ReadingProgress } from '@/lib/progress'
 
 export function BookContextMenu({
   book,
   progress,
+  devices,
   children,
   onRead,
   onMarkComplete,
   onMarkUnread,
   onReveal,
   onDelete,
+  onSend,
 }: {
   book: Book
   progress?: ReadingProgress
+  devices: ReaderDevice[]
   children: ReactNode
   onRead: (book: Book) => void
   onMarkComplete: (book: Book) => void
   onMarkUnread: (book: Book) => void
   onReveal: (book: Book) => void
   onDelete: (book: Book) => void
+  onSend: (book: Book, device: ReaderDevice) => void
 }) {
   const status = statusOf(progress)
   return (
@@ -46,6 +51,12 @@ export function BookContextMenu({
           <BookOpenIcon data-icon="inline-start" />
           {book.format === 'epub' ? 'Read...' : 'Open...'}
         </ContextMenuItem>
+        {devices.map((device) => (
+          <ContextMenuItem key={device.path} onClick={() => onSend(book, device)}>
+            <SendIcon data-icon="inline-start" />
+            Send to {device.label}
+          </ContextMenuItem>
+        ))}
         {status !== 'completed' && (
           <ContextMenuItem onClick={() => onMarkComplete(book)}>
             <CircleCheckIcon data-icon="inline-start" />

@@ -54,11 +54,14 @@ import {
   openBook,
   pickBookFiles,
   pickFolder,
+  getDevices,
+  sendToDevice,
   setLibrary,
   updateBookMetadata,
   type AppStateSummary,
   type Book,
   type ImportEvent,
+  type ReaderDevice,
 } from '@/lib/api'
 import {
   clearProgress,
@@ -96,6 +99,27 @@ export default function App() {
     Map<string, ReadingProgress>
   >(new Map())
   const [pendingDelete, setPendingDelete] = useState<Book | null>(null)
+  const [devices, setDevices] = useState<ReaderDevice[]>([])
+
+  useEffect(() => {
+    const poll = () => {
+      getDevices()
+        .then(setDevices)
+        .catch(() => {})
+    }
+    poll()
+    const timer = window.setInterval(poll, 5000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const handleSend = async (book: Book, device: ReaderDevice) => {
+    try {
+      await sendToDevice(book.id, device.path)
+      toast.success(`Sent "${book.title}" to ${device.label}`)
+    } catch (error) {
+      toast.error(String(error))
+    }
+  }
 
   const refreshProgress = useCallback(async () => {
     setProgressMap(await loadAllProgress())
@@ -414,11 +438,13 @@ export default function App() {
     <BookContextMenu
       book={book}
       progress={progressMap.get(book.id)}
+      devices={devices}
       onRead={readOrOpen}
       onMarkComplete={handleMarkComplete}
       onMarkUnread={handleMarkUnread}
       onReveal={handleReveal}
       onDelete={setPendingDelete}
+      onSend={(target, device) => void handleSend(target, device)}
     >
       {children}
     </BookContextMenu>

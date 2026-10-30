@@ -101,6 +101,24 @@ export async function readBook(path: string): Promise<ArrayBuffer> {
   return invoke<ArrayBuffer>('read_book', { path })
 }
 
+export interface ReaderDevice {
+  name: string
+  path: string
+  kind: string
+  label: string
+}
+
+export async function getDevices(): Promise<ReaderDevice[]> {
+  return invoke<ReaderDevice[]>('get_devices')
+}
+
+export async function sendToDevice(
+  bookId: string,
+  devicePath: string,
+): Promise<string> {
+  return invoke<string>('send_to_device', { bookId, devicePath })
+}
+
 export async function updateBookMetadata(
   id: string,
   title: string,
