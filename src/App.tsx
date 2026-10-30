@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
@@ -556,13 +557,13 @@ export default function App() {
                 }
               />
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel>{device.name}</DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={() => void handleEject(device)}
-                >
-                  <EjectIcon data-icon="inline-start" />
-                  Eject
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>{device.name}</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => void handleEject(device)}>
+                    <EjectIcon data-icon="inline-start" />
+                    Eject
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           ))}
