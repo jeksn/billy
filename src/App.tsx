@@ -4,9 +4,11 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import {
   BookIcon,
   BookOpenIcon,
+  EjectIcon,
   FilePlus2Icon,
   SearchIcon,
   SettingsIcon,
+  TabletIcon,
 } from 'lucide-react'
 
 import { cn } from 'cn'
@@ -30,6 +32,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -47,6 +50,7 @@ import { renderPdfCover } from '@/lib/pdf-cover'
 import { normalizeTitle, deviceTitlePortion } from '@/lib/matching'
 import {
   deleteBook,
+  ejectDevice,
   getBooks,
   getAppState,
   importFiles,
@@ -153,6 +157,15 @@ export default function App() {
     },
     [deviceBooks, deviceTitles],
   )
+
+  const handleEject = async (device: ReaderDevice) => {
+    try {
+      await ejectDevice(device.path)
+      toast.success(`Ejected ${device.label}`)
+    } catch (error) {
+      toast.error(String(error))
+    }
+  }
 
   const handleSend = async (book: Book, device: ReaderDevice) => {
     try {
@@ -531,6 +544,28 @@ export default function App() {
               {IS_MAC ? '⌘K' : 'Ctrl K'}
             </span>
           </Button>
+
+          {devices.map((device) => (
+            <DropdownMenu key={device.path}>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="outline" size="sm">
+                    <TabletIcon data-icon="inline-start" />
+                    {device.label}
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel>{device.name}</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => void handleEject(device)}
+                >
+                  <EjectIcon data-icon="inline-start" />
+                  Eject
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ))}
 
           <DropdownMenu>
             <DropdownMenuTrigger

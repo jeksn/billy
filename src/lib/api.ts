@@ -130,6 +130,10 @@ export async function listDeviceBooks(devicePath: string): Promise<string[]> {
   return invoke<string[]>('list_device_books', { devicePath })
 }
 
+export async function ejectDevice(devicePath: string): Promise<void> {
+  await invoke('eject_device', { devicePath })
+}
+
 export async function updateBookMetadata(
   id: string,
   title: string,

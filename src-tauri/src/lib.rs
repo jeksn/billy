@@ -363,6 +363,27 @@ async fn send_to_device(
     .await
 }
 
+/// Safely eject an e-reader volume (unmount + device disconnect).
+#[tauri::command]
+async fn eject_device(device_path: String) -> Result<(), AppError> {
+    let volume = PathBuf::from(&device_path);
+    if !devices::is_mounted_volume(&volume) {
+        return Err(AppError::msg("that device is no longer connected"));
+    }
+    let output = std::process::Command::new("diskutil")
+        .arg("eject")
+        .arg(&device_path)
+        .output()
+        .map_err(|e| AppError::msg(format!("failed to run diskutil: {e}")))?;
+    if !output.status.success() {
+        return Err(AppError::msg(format!(
+            "could not eject the device: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        )));
+    }
+    Ok(())
+}
+
 #[tauri::command]
 async fn save_cover(
     app: AppHandle,
@@ -433,7 +454,8 @@ pub fn run() {
             save_cover,
             get_devices,
             send_to_device,
-            list_device_books
+            list_device_books,
+            eject_device
         ])
         .run(tauri::generate_context!())
         .expect("error while running billy");
