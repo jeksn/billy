@@ -104,7 +104,6 @@ export default function App() {
   const [devices, setDevices] = useState<ReaderDevice[]>([])
   const [deviceBooks, setDeviceBooks] = useState<Set<string>>(new Set())
   const [deviceTitles, setDeviceTitles] = useState<Set<string>>(new Set())
-  const deviceSignatureRef = useRef('')
 
   const refreshDeviceBooks = useCallback(async (found: ReaderDevice[]) => {
     if (found.length === 0) {
@@ -132,11 +131,9 @@ export default function App() {
       getDevices()
         .then((found) => {
           setDevices(found)
-          const signature = found.map((d) => d.path).join('|')
-          if (signature !== deviceSignatureRef.current) {
-            deviceSignatureRef.current = signature
-            void refreshDeviceBooks(found)
-          }
+          // Always rescan the devices: cheap (a directory walk), and it
+          // keeps the on-device markers fresh without state gating.
+          void refreshDeviceBooks(found)
         })
         .catch(() => {})
     }
@@ -160,11 +157,7 @@ export default function App() {
   const handleSend = async (book: Book, device: ReaderDevice) => {
     try {
       await sendToDevice(book.id, device.path, sendKepub, sendAuthorFolders)
-      const base = (book.path.split('/').pop() ?? '')
-        .replace(/\.(epub|pdf)$/i, '')
-        .trim()
-        .toLowerCase()
-      setDeviceBooks((prev) => new Set(prev).add(base))
+      await refreshDeviceBooks(devices)
       toast.success(`Sent "${book.title}" to ${device.label}`)
     } catch (error) {
       toast.error(String(error))
