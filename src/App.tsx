@@ -159,7 +159,7 @@ export default function App() {
 
   const handleSend = async (book: Book, device: ReaderDevice) => {
     try {
-      await sendToDevice(book.id, device.path, sendKepub)
+      await sendToDevice(book.id, device.path, sendKepub, sendAuthorFolders)
       const base = (book.path.split('/').pop() ?? '')
         .replace(/\.(epub|pdf)$/i, '')
         .trim()
@@ -199,6 +199,10 @@ export default function App() {
   )
   const [sendKepub, setSendKepub] = usePersistentState<boolean>(
     'billy.sendKepub',
+    true,
+  )
+  const [sendAuthorFolders, setSendAuthorFolders] = usePersistentState<boolean>(
+    'billy.sendAuthorFolders',
     true,
   )
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
@@ -681,6 +685,8 @@ export default function App() {
         onHideReadChange={setHideRead}
         sendKepub={sendKepub}
         onSendKepubChange={setSendKepub}
+        sendAuthorFolders={sendAuthorFolders}
+        onSendAuthorFoldersChange={setSendAuthorFolders}
         onChooseLibrary={() => {
           setSettingsOpen(false)
           void chooseLibrary()

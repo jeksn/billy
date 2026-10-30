@@ -69,6 +69,88 @@ pub fn is_mounted_volume(path: &Path) -> bool {
     path.starts_with("/Volumes") && path.is_dir()
 }
 
+/// The folder name for an author's books on a device, Calibre-style
+/// ("Last, First"). Reuses an existing folder when the author already has
+/// one under either naming form, so billy's sends land in the same folders
+/// a previous Calibre setup created.
+pub fn author_folder_name(volume: &Path, author: &str) -> String {
+    let direct = normalize_name(author);
+    let reversed = to_author_sort(author);
+    let reversed_norm = normalize_name(&reversed);
+
+    if let Ok(entries) = std::fs::read_dir(volume) {
+        for entry in entries.flatten() {
+            if !entry.path().is_dir() {
+                continue
+            }
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if name.starts_with('.') {
+                continue
+            }
+            let normalized = normalize_name(&name);
+            if normalized == direct || normalized == reversed_norm {
+                return name
+            }
+        }
+    }
+
+    reversed
+}
+
+/// "First Last" → "Last, First", matching Calibre's author_sort convention.
+pub fn to_author_sort(author: &str) -> String {
+    let tokens: Vec<&str> = author.split_whitespace().collect();
+    match tokens.len() {
+        0 => "Unknown Author".to_string(),
+        1 => tokens[0].to_string(),
+        n => format!("{}, {}", tokens[n - 1], tokens[..n - 1].join(" ")),
+    }
+}
+
+fn normalize_name(s: &str) -> String {
+    s.chars()
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_lowercase().next().unwrap_or(c)
+            } else {
+                ' '
+            }
+        })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn author_folder_prefers_existing_folder() {
+        let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/test-device");
+        let adorno = base.join("Adorno, Theodor");
+        fs::create_dir_all(&adorno).unwrap();
+
+        assert_eq!(
+            author_folder_name(&base, "Theodor Adorno"),
+            "Adorno, Theodor"
+        );
+        assert_eq!(author_folder_name(&base, "Jane Doe"), "Doe, Jane");
+        assert_eq!(author_folder_name(&base, "Plato"), "Plato");
+
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn author_sort_reverses_names() {
+        assert_eq!(to_author_sort("Ursula K. Le Guin"), "Guin, Ursula K. Le");
+        assert_eq!(to_author_sort("Plato"), "Plato");
+        assert_eq!(to_author_sort(""), "Unknown Author");
+    }
+}
+
 /// Walk a mounted e-reader volume and collect normalized base names of the
 /// ebook files on it (lowercased, extension and `.kepub` suffix stripped),
 /// so the library can mark which books are already on the device. Handles

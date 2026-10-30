@@ -342,6 +342,7 @@ async fn send_to_device(
     book_id: String,
     device_path: String,
     kepub: bool,
+    author_folder: bool,
 ) -> Result<String, AppError> {
     run_blocking(app, move |app| {
         let volume = PathBuf::from(&device_path);
@@ -354,7 +355,8 @@ async fn send_to_device(
                 .into_iter()
                 .find(|d| d.path == device_path)
                 .ok_or_else(|| AppError::msg("device is no longer recognized"))?;
-            let target = lib.send_to_device(&book_id, &volume, &device.kind, kepub)?;
+            let target =
+                lib.send_to_device(&book_id, &volume, &device.kind, kepub, author_folder)?;
             Ok(target.to_string_lossy().into_owned())
         })
     })

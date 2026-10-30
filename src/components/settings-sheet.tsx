@@ -54,6 +54,8 @@ export function SettingsSheet({
   onHideReadChange,
   sendKepub,
   onSendKepubChange,
+  sendAuthorFolders,
+  onSendAuthorFoldersChange,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -70,6 +72,8 @@ export function SettingsSheet({
   onHideReadChange: (hide: boolean) => void
   sendKepub: boolean
   onSendKepubChange: (kepub: boolean) => void
+  sendAuthorFolders: boolean
+  onSendAuthorFoldersChange: (folders: boolean) => void
 }) {
   const { theme, setTheme } = useTheme()
 
@@ -227,6 +231,24 @@ export function SettingsSheet({
                 onCheckedChange={(checked) => onSendKepubChange(checked)}
               />
             </label>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm">Folder structure</span>
+              <ToggleGroup
+                variant="outline"
+                value={[sendAuthorFolders ? 'authors' : 'root']}
+                onValueChange={(value) => {
+                  const next = value[value.length - 1]
+                  if (next) {
+                    onSendAuthorFoldersChange(next === 'authors')
+                  }
+                }}
+              >
+                <ToggleGroupItem value="authors">
+                  Author folders
+                </ToggleGroupItem>
+                <ToggleGroupItem value="root">Volume root</ToggleGroupItem>
+              </ToggleGroup>
+            </div>
           </section>
 
           <Separator />

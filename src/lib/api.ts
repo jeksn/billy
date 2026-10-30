@@ -116,8 +116,14 @@ export async function sendToDevice(
   bookId: string,
   devicePath: string,
   kepub: boolean,
+  authorFolders: boolean,
 ): Promise<string> {
-  return invoke<string>('send_to_device', { bookId, devicePath, kepub })
+  return invoke<string>('send_to_device', {
+    bookId,
+    devicePath,
+    kepub,
+    authorFolders,
+  })
 }
 
 export async function listDeviceBooks(devicePath: string): Promise<string[]> {

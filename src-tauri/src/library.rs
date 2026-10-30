@@ -151,13 +151,15 @@ impl Library {
 
     /// Copy a book file onto a mounted e-reader volume; returns the
     /// destination path. EPUBs sent to a Kobo can be converted to KEPUB
-    /// on the way, which enables Kobo reading stats.
+    /// on the way, and books can be filed into per-author folders
+    /// (Calibre-style) instead of the volume root.
     pub fn send_to_device(
         &self,
         book_id: &str,
         volume: &Path,
         kind: &str,
         kepub: bool,
+        author_folder: bool,
     ) -> Result<std::path::PathBuf, AppError> {
         let row = db::get_book(&self.conn, book_id)?
             .ok_or_else(|| AppError::msg("book not found"))?;
@@ -165,8 +167,18 @@ impl Library {
         if !source.exists() {
             return Err(AppError::msg("book file is missing from the library"));
         }
-        let target_dir = crate::devices::target_dir(volume, kind);
+
+        let target_dir = if kind == "kindle" {
+            crate::devices::target_dir(volume, kind)
+        } else if author_folder {
+            let author = row.author.as_deref().unwrap_or("Unknown Author");
+            let folder = crate::devices::author_folder_name(volume, author);
+            volume.join(sanitize_component(&folder))
+        } else {
+            volume.to_path_buf()
+        };
         fs::create_dir_all(&target_dir)?;
+
         let base = row
             .file_path
             .rsplit('/')
@@ -644,7 +656,7 @@ fn file_name_rel(title: &str, author: Option<&str>, ext: &str) -> String {
 /// Make a string safe to use as a single filesystem path component on all
 /// desktop platforms: strip separators and reserved characters, collapse
 /// whitespace, trim trailing dots/spaces, cap the length.
-fn sanitize_component(input: &str) -> String {
+pub(crate) fn sanitize_component(input: &str) -> String {
     let mut out: String = input
         .chars()
         .map(|c| match c {
