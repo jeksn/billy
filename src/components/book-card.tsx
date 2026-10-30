@@ -51,13 +51,10 @@ export function BookCard({
           <CircleCheckIcon className="absolute top-1.5 right-1.5 size-5 rounded-full bg-background/80 text-primary" />
         )}
         {onDevice && (
-          <Badge
-            variant="secondary"
-            className="absolute top-1.5 left-1.5 gap-1"
-            title="On device"
-          >
-            <TabletIcon className="size-3" />
-          </Badge>
+          <TabletIcon
+            className="absolute top-1.5 left-1.5 size-5 rounded-full bg-background/80 text-primary"
+            aria-label="On device"
+          />
         )}
       </div>
       <div className="flex flex-col">
