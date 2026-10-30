@@ -44,6 +44,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { usePersistentState } from '@/hooks/use-persistent-state'
 import { renderPdfCover } from '@/lib/pdf-cover'
+import { normalizeTitle, deviceTitlePortion } from '@/lib/matching'
 import {
   deleteBook,
   getBooks,
@@ -102,20 +103,27 @@ export default function App() {
   const [pendingDelete, setPendingDelete] = useState<Book | null>(null)
   const [devices, setDevices] = useState<ReaderDevice[]>([])
   const [deviceBooks, setDeviceBooks] = useState<Set<string>>(new Set())
+  const [deviceTitles, setDeviceTitles] = useState<Set<string>>(new Set())
   const deviceSignatureRef = useRef('')
 
   const refreshDeviceBooks = useCallback(async (found: ReaderDevice[]) => {
     if (found.length === 0) {
       setDeviceBooks(new Set())
+      setDeviceTitles(new Set())
       return
     }
     try {
       const lists = await Promise.all(
         found.map((device) => listDeviceBooks(device.path)),
       )
-      setDeviceBooks(new Set(lists.flat()))
+      const names = lists.flat()
+      setDeviceBooks(new Set(names))
+      setDeviceTitles(
+        new Set(names.map((name) => normalizeTitle(deviceTitlePortion(name)))),
+      )
     } catch {
       setDeviceBooks(new Set())
+      setDeviceTitles(new Set())
     }
   }, [])
 
@@ -143,14 +151,15 @@ export default function App() {
         /\.(epub|pdf)$/i,
         '',
       )
-      return deviceBooks.has(base.trim().toLowerCase())
+      if (deviceBooks.has(base.trim().toLowerCase())) return true
+      return deviceTitles.has(normalizeTitle(book.title))
     },
-    [deviceBooks],
+    [deviceBooks, deviceTitles],
   )
 
   const handleSend = async (book: Book, device: ReaderDevice) => {
     try {
-      await sendToDevice(book.id, device.path)
+      await sendToDevice(book.id, device.path, sendKepub)
       const base = (book.path.split('/').pop() ?? '')
         .replace(/\.(epub|pdf)$/i, '')
         .trim()
@@ -187,6 +196,10 @@ export default function App() {
   const [hideRead, setHideRead] = usePersistentState<boolean>(
     'billy.hideRead',
     false,
+  )
+  const [sendKepub, setSendKepub] = usePersistentState<boolean>(
+    'billy.sendKepub',
+    true,
   )
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [importing, setImporting] = useState<{
@@ -666,6 +679,8 @@ export default function App() {
         onSortModeChange={setSortMode}
         hideRead={hideRead}
         onHideReadChange={setHideRead}
+        sendKepub={sendKepub}
+        onSendKepubChange={setSendKepub}
         onChooseLibrary={() => {
           setSettingsOpen(false)
           void chooseLibrary()
