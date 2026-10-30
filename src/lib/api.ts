@@ -122,7 +122,7 @@ export async function sendToDevice(
     bookId,
     devicePath,
     kepub,
-    authorFolders,
+    authorFolder: authorFolders,
   })
 }
 
