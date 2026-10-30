@@ -534,23 +534,11 @@ export default function App() {
             </span>
           )}
 
-          <Button
-            variant="outline"
-            onClick={() => setSearchOpen(true)}
-            className="justify-start font-normal text-muted-foreground"
-          >
-            <SearchIcon data-icon="inline-start" />
-            {hasActiveFilters(filters) ? 'Filtered' : 'Search books...'}
-            <span className="ml-auto text-xs tracking-widest">
-              {IS_MAC ? '⌘K' : 'Ctrl K'}
-            </span>
-          </Button>
-
           {devices.map((device) => (
             <DropdownMenu key={device.path}>
               <DropdownMenuTrigger
                 render={
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline">
                     <TabletIcon data-icon="inline-start" />
                     {device.label}
                   </Button>
@@ -567,6 +555,18 @@ export default function App() {
               </DropdownMenuContent>
             </DropdownMenu>
           ))}
+
+          <Button
+            variant="outline"
+            onClick={() => setSearchOpen(true)}
+            className="justify-start font-normal text-muted-foreground"
+          >
+            <SearchIcon data-icon="inline-start" />
+            {hasActiveFilters(filters) ? 'Filtered' : 'Search books...'}
+            <span className="ml-auto text-xs tracking-widest">
+              {IS_MAC ? '⌘K' : 'Ctrl K'}
+            </span>
+          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger
