@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import {
   BookIcon,
@@ -217,6 +218,7 @@ export default function App() {
     current: number
     total: number
   } | null>(null)
+  const [dragOver, setDragOver] = useState(false)
 
   const attemptedCoversRef = useRef(new Set<string>())
 
@@ -352,6 +354,53 @@ export default function App() {
     if (!path) return
     await runImport((onEvent) => importFromCalibre(path, onEvent))
   }
+
+  const handleDroppedPaths = (paths: string[]) => {
+    if (!summary?.libraryPath) {
+      toast.info('Choose a library folder first')
+      return
+    }
+    if (importing !== null) {
+      toast.info('An import is already in progress')
+      return
+    }
+    const files = paths.filter((path) => /\.(epub|pdf)$/i.test(path))
+    if (files.length === 0) {
+      toast.info('Only EPUB or PDF files can be imported')
+      return
+    }
+    void runImport((onEvent) => importFiles(files, onEvent))
+  }
+
+  // The webview listener is registered once, so it reads the latest handler
+  // through this ref.
+  const dropHandlerRef = useRef(handleDroppedPaths)
+  useEffect(() => {
+    dropHandlerRef.current = handleDroppedPaths
+  })
+
+  useEffect(() => {
+    const unlistenPromise = getCurrentWebview().onDragDropEvent((event) => {
+      const payload = event.payload
+      if (payload.type === 'drop') {
+        setDragOver(false)
+        dropHandlerRef.current(payload.paths)
+      } else if (payload.type === 'leave') {
+        setDragOver(false)
+      } else {
+        setDragOver(true)
+      }
+    })
+    // Keep the webview from navigating to the dropped file.
+    const preventDefault = (event: DragEvent) => event.preventDefault()
+    window.addEventListener('dragover', preventDefault)
+    window.addEventListener('drop', preventDefault)
+    return () => {
+      void unlistenPromise.then((unlisten) => unlisten())
+      window.removeEventListener('dragover', preventDefault)
+      window.removeEventListener('drop', preventDefault)
+    }
+  }, [])
 
   const sortedBooks = useMemo(
     () => sortBooks(books, sortMode),
@@ -627,7 +676,7 @@ export default function App() {
               </EmptyMedia>
               <EmptyTitle>No books yet</EmptyTitle>
               <EmptyDescription>
-                Import your first EPUB or PDF to get started.
+                Drag an EPUB or PDF onto the window, or use the Import button.
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
@@ -761,6 +810,16 @@ export default function App() {
         }}
         onCancel={() => setPendingDelete(null)}
       />
+
+      {dragOver && (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/80">
+          <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-primary bg-background px-12 py-10">
+            <FilePlus2Icon className="size-10 text-primary" />
+            <p className="text-lg font-medium">Drop to import</p>
+            <p className="text-sm text-muted-foreground">EPUB or PDF files</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
